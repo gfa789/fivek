@@ -1,0 +1,17 @@
+[Unit]
+Description=Build, verify, and deploy trusted main branches
+After=network-online.target tailscaled.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/sbin/personal-apps-auto-deploy.py all
+TimeoutStartSec=15min
+UMask=0022
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/opt/rookcursion /opt/fivek /var/lib/rookcursion /var/lib/fivek /var/lib/personal-apps-deploy /var/backups/personal-apps
+MemoryMax=2G
+CPUQuota=100%

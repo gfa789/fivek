@@ -1,0 +1,11 @@
+[Unit]
+Description=Check both GitHub main branches for deployment every minute
+
+[Timer]
+OnBootSec=45s
+OnUnitInactiveSec=60s
+AccuracySec=5s
+Unit=personal-apps-deploy.service
+
+[Install]
+WantedBy=timers.target
