@@ -18,7 +18,11 @@ Tailscale identity as `personal-apps`, authenticated to your own account. Then:
 tailscale serve --bg --https=443 http://127.0.0.1:8876
 ```
 
-Set `FIVEK_BASE_PATH=/running/` in the shared environment file to serve FiveK at `/running/` and a lightweight app directory at `/` on port 443. The directory links to Running and Rookcursion (`/chess/`, configured separately in Tailscale Serve). Without this setting, standalone FiveK stays at `/`. Enable fivek-proxy.service. Enable fivek-refresh.timer and fivek-backup.timer after Garmin authentication works.
+Set `FIVEK_BASE_PATH=/running/` in the shared environment file. Configure
+Tailscale Serve with `tailscale serve --bg --https=443 --set-path=/running http://127.0.0.1:8876`.
+Serve strips the prefix for the private proxy; the dashboard uses the prefix for assets, API requests and downloads.
+The separate `gfa789/personal-apps-home` repository serves `/` and links to Running and Rookcursion.
+Enable fivek-proxy.service. Enable fivek-refresh.timer and fivek-backup.timer after Garmin authentication works.
 Set `TAILSCALE_OWNER` to your Tailscale login; the application/bridge rejects
 missing and different identities, even if other tailnet members can reach it.
 Only Tailscale Serve should connect to these loopback ports. Do not share server

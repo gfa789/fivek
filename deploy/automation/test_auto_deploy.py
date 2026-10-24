@@ -62,6 +62,15 @@ class DeploymentTests(unittest.TestCase):
             self.assertEqual(saved['deployed_sha'],old)
             self.assertEqual(saved['failed_sha'],new)
 
+    def test_stale_workflow_cannot_deploy_another_revision(self):
+        with patch.object(Path,'exists',return_value=True), \
+             patch.object(deploy,'read_state',return_value={}), \
+             patch.object(deploy,'build_user',return_value=SimpleNamespace(stdout='b'*40)), \
+             patch.object(deploy,'write_state'), patch.object(deploy,'activate') as activate:
+            with self.assertRaisesRegex(ValueError,'no longer the main'):
+                deploy.deploy('fivek',requested_sha='a'*40)
+            activate.assert_not_called()
+
 
 if __name__=='__main__':
     unittest.main()

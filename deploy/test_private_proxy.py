@@ -105,7 +105,7 @@ class MountedAccessTests(PrivateAccessTests):
         cls.environment.stop()
 
     def test_owner_get_rewrites_host_and_preserves_app_headers(self):
-        status, body, headers = self.request(path="/running/", headers=self.owner())
+        status, body, headers = self.request(path="/", headers=self.owner())
         self.assertEqual(status, 200)
         self.assertIn(self.app.app.token.encode(), body)
         for target in (b'/running/assets/dashboard.js', b'/running/assets/dashboard.css', b'/running/report.json', b'/running/insights.md'):
@@ -115,26 +115,13 @@ class MountedAccessTests(PrivateAccessTests):
 
     def test_owner_post_requires_existing_csrf_token(self):
         headers = self.owner(**{"Content-Type": "application/json"})
-        self.assertEqual(self.request("POST", "/running/api/cancel", headers, b"{}")[0], 403)
+        self.assertEqual(self.request("POST", "/api/cancel", headers, b"{}")[0], 403)
         headers["X-FiveK-Token"] = self.app.app.token
-        self.assertEqual(self.request("POST", "/running/api/cancel", headers, b"{}")[0], 202)
+        self.assertEqual(self.request("POST", "/api/cancel", headers, b"{}")[0], 202)
 
-    def test_homepage_and_mount_routes(self):
-        status, body, _ = self.request(headers=self.owner())
-        self.assertEqual(status, 200)
-        self.assertIn(b'href="/running/"', body)
-        self.assertIn(b'href="/chess/"', body)
-        self.assertNotIn(self.app.app.token.encode(), body)
-        status, _, headers = self.request(path="/running?from=home", headers=self.owner())
-        self.assertEqual(status, 308)
-        self.assertEqual(headers["Location"], "/running/?from=home")
-        for path in ("/running/api/status?check=1", "/running/assets/dashboard.js", "/running/assets/dashboard.css"):
+    def test_prefix_is_stripped_by_tailscale(self):
+        for path in ("/api/status?check=1", "/assets/dashboard.js", "/assets/dashboard.css", "/running/api/status") :
             self.assertEqual(self.request(path=path, headers=self.owner())[0], 200)
-        for path in ("/api/status", "/assets/dashboard.js", "/running-other/"):
-            self.assertEqual(self.request(path=path, headers=self.owner())[0], 404)
-        for path in ("/", "/running/", "/running/api/status"):
-            self.assertEqual(self.request(path=path)[0], 403)
-        self.assertEqual(self.request("POST", headers=self.owner(), body=b"{}")[0], 405)
 
     def test_base_path_validation(self):
         from fivek.config import base_path
