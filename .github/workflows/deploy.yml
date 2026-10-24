@@ -42,6 +42,16 @@ jobs:
           audience: ${{ vars.TS_AUDIENCE }}
           tags: tag:github-deploy
           hostname: gh-fivek-${{ github.run_id }}
+      - name: Verify the runner cannot access private app HTTPS
+        run: |
+          python3 - <<'PY'
+          import socket
+          try:
+              with socket.create_connection(("100.69.243.15", 443), timeout=3):
+                  raise SystemExit("CI must not have access to private app HTTPS")
+          except OSError:
+              print("Private app HTTPS is correctly inaccessible to CI")
+          PY
       - name: Deploy this revision and verify health
         env:
           DEPLOY_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
