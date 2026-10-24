@@ -1,4 +1,6 @@
 const TOKEN = document.querySelector('meta[name="fivek-token"]').content;
+const BASE_PATH = document.querySelector('meta[name="fivek-base-path"]').content;
+const appUrl = (path) => BASE_PATH + path.replace(/^\/+/, '');
 let reportData = null,
   shown = 30,
   weekOffset = 0,
@@ -48,12 +50,12 @@ const durationTime = (seconds) => {
         String(whole % 60).padStart(2, "0");
 };
 async function get(path) {
-  const r = await fetch(path);
+  const r = await fetch(appUrl(path));
   if (!r.ok) throw Error("Could not load local data");
   return r.json();
 }
 async function post(path, body) {
-  const r = await fetch(path, {
+  const r = await fetch(appUrl(path), {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-FiveK-Token": TOKEN },
     body: JSON.stringify(body),
@@ -531,7 +533,7 @@ $("checkin-history").onclick = (event) => {
 };
 async function load() {
   try {
-    const response = await fetch("/api/report", {
+    const response = await fetch(appUrl("/api/report"), {
       headers: reportEtag ? { "If-None-Match": reportEtag } : {},
     });
     if (response.status === 304) return;

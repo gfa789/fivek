@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>FiveK · Your training plan</title>
     <meta name="fivek-token" content="__CSRF_TOKEN__" />
-    <link rel="stylesheet" href="/assets/dashboard.css" />
+    <meta name="fivek-base-path" content="__BASE_PATH__" />
+    <link rel="stylesheet" href="__BASE_PATH__assets/dashboard.css" />
   </head>
   <body>
     <header>
@@ -16,7 +17,7 @@
       <div class="actions">
         <a
           class="button secondary"
-          href="/training-plan.ics"
+          href="__BASE_PATH__training-plan.ics"
           download="fivek-plan.ics"
           >Export calendar</a
         ><button id="refresh">Refresh Garmin ↻</button>
@@ -448,8 +449,8 @@
       <details class="panel">
         <summary>Data coverage, refresh details & assumptions</summary>
         <div class="actions maintenance-actions">
-          <a class="button secondary" href="/report.json">Download report</a
-          ><a class="button secondary" href="/insights.md">Download insights</a
+          <a class="button secondary" href="__BASE_PATH__report.json">Download report</a
+          ><a class="button secondary" href="__BASE_PATH__insights.md">Download insights</a
           ><button id="backup" class="secondary" type="button">
             Create local backup
           </button>
@@ -475,6 +476,6 @@
       </div>
       <div id="activity-content" aria-live="polite"></div>
     </dialog>
-    <script src="/assets/dashboard.js" defer></script>
+    <script src="__BASE_PATH__assets/dashboard.js" defer></script>
   </body>
 </html>

@@ -13,7 +13,7 @@ from importlib.resources import files
 from urllib.parse import urlsplit
 
 from garmin_api import GarminAuth, GarminError, GarminMFARequired
-from .config import Config, local_today
+from .config import Config, local_today, base_path
 from .coaching import validate_benchmark, validate_preferences
 from .pipeline import PROCESSING_VERSION, atomic_text, calendar, refresh, report
 from .store import BusyError, Store, refresh_active, now
@@ -275,7 +275,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if path == "/":
                 html = files("fivek").joinpath("dashboard.html").read_text(encoding="utf-8")
-                return self.respond(200, html.replace("__CSRF_TOKEN__", self.server.app.token), "text/html")
+                return self.respond(200, html.replace("__CSRF_TOKEN__", self.server.app.token).replace("__BASE_PATH__", base_path()), "text/html")
             assets = {"/assets/dashboard.js": "text/javascript", "/assets/dashboard.css": "text/css"}
             if path in assets:
                 resource = files("fivek").joinpath("assets", path.rsplit("/", 1)[1])

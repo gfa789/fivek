@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f3ed">
+  <title>Your apps</title>
+  <style>
+    :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:#25362f;background:#f4f3ed;font-synthesis:none}
+    *{box-sizing:border-box}body{margin:0;min-height:100svh;display:grid;place-items:center;padding:40px 24px}
+    main{width:min(100%,760px)}.eyebrow{font-size:11px;font-weight:650;letter-spacing:.18em;text-transform:uppercase;color:#6d7d70}
+    h1{font-family:Georgia,"Times New Roman",serif;font-size:clamp(42px,8vw,64px);font-weight:400;letter-spacing:-.045em;line-height:1.1;margin:19px 0 14px}
+    .intro{font-size:16px;line-height:1.6;color:#68746c;margin:0 0 38px}
+    nav{display:grid;grid-template-columns:1fr 1fr;gap:16px}a{color:inherit;text-decoration:none}
+    .app{padding:26px;border:1px solid #d9dfd3;border-radius:16px;background:#fcfcf6;display:grid;grid-template-columns:1fr auto;gap:20px;transition:background .15s,border-color .15s}
+    .app:hover{background:#fff;border-color:#91a48e}.app:focus-visible{outline:3px solid #52714d;outline-offset:5px}
+    .icon{font-size:27px;line-height:1;width:44px;height:44px;display:grid;place-items:center;background:#e8eddf;border-radius:12px;grid-column:1/-1}
+    .app-title{font-weight:650;font-size:19px;letter-spacing:-.025em}.description{font-size:13px;line-height:1.6;color:#6d786d;grid-column:1/-1;margin:-10px 0 2px;max-width:240px}.arrow{font-size:22px;color:#7c9077}
+    footer{margin-top:28px;color:#8c9589;font-size:11px;letter-spacing:.02em}
+    @media(max-width:520px){nav{grid-template-columns:1fr}.app{padding:22px}.intro{max-width:270px}body{padding:32px 22px}footer{margin-top:24px}}
+    @media(prefers-reduced-motion:reduce){.app{transition:none}}
+  </style>
+</head>
+<body>
+  <main>
+    <div class="eyebrow">Your space</div>
+    <h1>Your apps.</h1>
+    <p class="intro">A quick way back to the things you're working on.</p>
+    <nav aria-label="Your apps">
+      <a class="app" href="/running/" aria-label="Open Running">
+        <span class="icon" aria-hidden="true">↗</span>
+        <span class="app-title">Running</span><span class="arrow" aria-hidden="true">→</span>
+        <p class="description">Your training, recovery and next 5K.</p>
+      </a>
+      <a class="app" href="/chess/" aria-label="Open Rookcursion">
+        <span class="icon" aria-hidden="true">♜</span>
+        <span class="app-title">Rookcursion</span><span class="arrow" aria-hidden="true">→</span>
+        <p class="description">Review your games. Find your next move.</p>
+      </a>
+    </nav>
+    <footer>A little room for your projects.</footer>
+  </main>
+</body>
+</html>

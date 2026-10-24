@@ -2,10 +2,18 @@ from __future__ import annotations
 
 import os
 import math
+import re
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+
+def base_path() -> str:
+    value = os.getenv("FIVEK_BASE_PATH", "/")
+    if not re.fullmatch(r"/(?:[A-Za-z0-9_-]+/)*", value):
+        raise ValueError("FIVEK_BASE_PATH must be a path with leading and trailing slashes")
+    return value
 
 
 def local_today() -> date:
