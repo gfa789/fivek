@@ -49,7 +49,7 @@
               Connect Garmin to establish your starting point.
             </p>
           </div>
-          <span id="level" class="muted">23 · male · 6 ft · gym access</span>
+          <span id="level" class="muted">Loading your training profile…</span>
         </div>
       </section>
       <div class="sync-controls">
@@ -414,6 +414,18 @@
           </form>
         </section>
       </div>
+      <section class="panel" id="garmin-setup">
+        <h2>Connect Garmin</h2>
+        <p>Enter your own Garmin credentials here to start a fresh import. Your connection is encrypted on this host and excluded from database backups.</p>
+        <form id="garmin-connect">
+          <label for="garmin-email">Garmin account email</label>
+          <input id="garmin-email" type="email" autocomplete="username" required maxlength="254" />
+          <label for="garmin-password">Garmin password</label>
+          <input id="garmin-password" type="password" autocomplete="current-password" required maxlength="4096" />
+          <button type="submit">Save Garmin connection</button>
+          <p id="garmin-message" class="evidence" role="status"></p>
+        </form>
+      </section>
       <section class="panel" id="calendar-setup">
         <h2>Calendar and automatic refresh</h2>
         <p>Publish the coming seven days of runs to a dedicated <strong>FiveK Training</strong> iCloud calendar. Runs are all-day entries; the plan does not guess your available time.</p>
@@ -424,7 +436,7 @@
           <input id="apple-email" type="email" autocomplete="username" required maxlength="254" />
           <label for="apple-password">Apple app-specific password</label>
           <input id="apple-password" type="password" autocomplete="new-password" required maxlength="128" />
-          <p class="evidence">Create an app-specific password at <a href="https://account.apple.com" target="_blank" rel="noreferrer">account.apple.com</a>. Enter it here, not in chat. It is encrypted for your Windows account and excluded from database backups.</p>
+          <p class="evidence">Create an app-specific password at <a href="https://account.apple.com" target="_blank" rel="noreferrer">account.apple.com</a>. Enter it here, not in chat. It is encrypted on this host and excluded from database backups.</p>
           <button type="submit">Connect Apple Calendar and add runs</button>
         </form>
         <div class="actions">

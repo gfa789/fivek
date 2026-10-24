@@ -23,7 +23,8 @@ def run_cycle(config: Config, auth_factory=None, calendar_provider=None):
                 status.update(status="deferred", message="Another refresh is running; the next cycle will retry.")
                 return status
             try:
-                api = (auth_factory or GarminAuth.from_environment)().login()
+                from .account import auth_from_store
+                api = (auth_factory or (lambda: auth_from_store(config)))().login()
                 result = refresh(api, config, progress=lambda _: None)
                 status["garmin_status"] = result["sync"]["run"]["status"]
                 if status["garmin_status"] != "complete":

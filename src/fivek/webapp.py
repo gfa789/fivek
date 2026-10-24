@@ -21,9 +21,10 @@ from .calendar_sync import CalendarError
 
 
 class Application:
-    def __init__(self, config: Config, auth_factory=GarminAuth.from_environment):
+    def __init__(self, config: Config, auth_factory=None):
         self.config = config
-        self.auth_factory = auth_factory
+        from .account import auth_from_store
+        self.auth_factory = auth_factory or (lambda: auth_from_store(config))
         self.auth = None
         self.token = secrets.token_urlsafe(32)
         self.gate = threading.RLock()
@@ -336,6 +337,15 @@ class Handler(BaseHTTPRequestHandler):
             return self.respond(400, {"error": "Invalid JSON request"})
         path = urlsplit(self.path).path
         try:
+            if path == "/api/garmin/connect":
+                from .account import save_connection
+                with self.server.app.gate:
+                    if self.server.app.state["busy"] or refresh_active(self.server.app.config.data_dir):
+                        raise BusyError("Stop the current refresh before reconnecting Garmin")
+                    save_connection(self.server.app.config, body)
+                    self.server.app.auth = None
+                    self.server.app.update(mfa=False, error=None, message="Garmin connection saved. Refresh to sign in.")
+                return self.respond(200, {"message": "Garmin connection saved securely. Refresh to sign in."})
             if path == "/api/calendar/connect":
                 from .calendar_sync import connect_apple, sync_calendar
                 result = connect_apple(self.server.app.config, body)

@@ -16,7 +16,7 @@ async function refreshCalendarStatus() {
       : 'Apple Calendar is not connected yet.';
     $('calendar-sync').disabled = !value.connected;
     $('automation-status').textContent = value.automation?.installed
-      ? 'Automatic refresh: every 2 hours and at Windows sign-in. This PC must be awake and your account signed in.' +
+      ? (value.automation.platform === 'linux' ? 'Automatic refresh runs on this server every 2 hours.' : 'Automatic refresh: every 2 hours and at Windows sign-in. This PC must be awake and your account signed in.') +
         (value.last_cycle ? ' Last cycle: ' + value.last_cycle.status.replaceAll('_',' ') + ' · ' + value.last_cycle.message : '')
       : 'Automatic refresh has not been installed.';
     if (value.last_error) $('calendar-status').textContent += ' · ' + value.last_error.message;
@@ -674,6 +674,18 @@ $("more").onclick = () => {
 };
 load().then(poll);
 refreshCalendarStatus();
+$('garmin-connect').onsubmit = async (event) => {
+  event.preventDefault();
+  const button = event.currentTarget.querySelector('button');
+  button.disabled = true;
+  const body = {email:$('garmin-email').value,password:$('garmin-password').value};
+  $('garmin-password').value = '';
+  try {
+    const value = await post('/api/garmin/connect', body);
+    $('garmin-message').textContent = value.message;
+  } catch (error) { $('garmin-message').textContent = error.message; }
+  finally { button.disabled = false; }
+};
 $('calendar-connect').onsubmit = async (event) => {
   event.preventDefault();
   const button = event.currentTarget.querySelector('button');
