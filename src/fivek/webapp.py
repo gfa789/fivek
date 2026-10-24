@@ -5,6 +5,7 @@ import hashlib
 import json
 import secrets
 import socket
+import os
 import threading
 from datetime import date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -223,14 +224,14 @@ class Application:
 
 class LocalServer(ThreadingHTTPServer):
     daemon_threads = True
-    allow_reuse_address = False
+    allow_reuse_address = os.name != "nt"
 
     def server_bind(self):
         if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
         super().server_bind()
 
-    def __init__(self, config: Config, port: int, auth_factory=GarminAuth.from_environment):
+    def __init__(self, config: Config, port: int, auth_factory=None):
         self.app = Application(config, auth_factory)
         super().__init__(("127.0.0.1", port), Handler)
 

@@ -13,7 +13,7 @@ HOP_HEADERS = {"connection", "keep-alive", "proxy-authenticate", "proxy-authoriz
 
 class PrivateProxy(ThreadingHTTPServer):
     daemon_threads = True
-    allow_reuse_address = False
+    allow_reuse_address = os.name != "nt"
 
     def __init__(self, port=8876, upstream_port=8765, owner=None):
         self.upstream_port, self.owner = upstream_port, owner or os.environ["TAILSCALE_OWNER"]

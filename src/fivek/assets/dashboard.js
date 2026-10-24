@@ -283,18 +283,7 @@ function render(r) {
       p.target_time.reference +
       ". Build from here."
     : "Your first step: establish an observed 5K reference.";
-  const inches = Math.round(r.profile.height_cm / 2.54);
-  $("level").textContent =
-    r.profile.age +
-    " · " +
-    r.profile.sex +
-    " · " +
-    Math.floor(inches / 12) +
-    " ft" +
-    (inches % 12 ? " " + (inches % 12) + " in" : "") +
-    " · " +
-    p.level +
-    " running plan";
+  $("level").textContent = p.level + " running plan";
   $("distance").textContent = m.baseline_weekly_km.toFixed(1) + " km/wk";
   $("run-count").textContent = m.recent_run_count + " runs across " + (m.recent_running_days ?? 'unknown') + " dates in the last 28 days";
   $("best").textContent = m.benchmark

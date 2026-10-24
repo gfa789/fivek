@@ -27,6 +27,12 @@ class AccountTests(unittest.TestCase):
             first = auth_from_store(self.config)
             self.assertEqual(first.email, 'first@example.com')
             self.assertEqual(first._password, 'example-password')
+            from fivek.webapp import LocalServer
+            server = LocalServer(self.config, 0)
+            try:
+                self.assertEqual(server.app.auth_factory().email, 'first@example.com')
+            finally:
+                server.server_close()
             save_connection(self.config, {'email':'second@example.com', 'password':'different-password'})
             second = auth_from_store(self.config)
             self.assertNotEqual(first.token_store, second.token_store)
