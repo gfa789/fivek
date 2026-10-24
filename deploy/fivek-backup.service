@@ -1,0 +1,14 @@
+[Unit]
+Description=FiveK backup
+
+[Service]
+Type=oneshot
+User=fivek
+WorkingDirectory=/opt/fivek/app
+EnvironmentFile=/etc/fivek/app.env
+ExecStart=/opt/fivek/venv/bin/python -m fivek backup
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/fivek

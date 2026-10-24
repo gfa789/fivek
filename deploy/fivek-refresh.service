@@ -1,0 +1,14 @@
+[Unit]
+Description=FiveK refresh
+
+[Service]
+Type=oneshot
+User=fivek
+WorkingDirectory=/opt/fivek/app
+EnvironmentFile=/etc/fivek/app.env
+ExecStart=/opt/fivek/venv/bin/python -m fivek scheduled-refresh
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/fivek

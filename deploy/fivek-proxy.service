@@ -1,0 +1,18 @@
+[Unit]
+Description=Owner-only Tailscale bridge for FiveK
+After=fivek.service
+Requires=fivek.service
+
+[Service]
+User=fivek
+WorkingDirectory=/opt/fivek/app
+EnvironmentFile=/etc/fivek/app.env
+ExecStart=/opt/fivek/venv/bin/python deploy/private_proxy.py
+Restart=on-failure
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

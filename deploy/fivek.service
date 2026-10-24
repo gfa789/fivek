@@ -1,0 +1,24 @@
+[Unit]
+Description=fivek private dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=fivek
+Group=fivek
+WorkingDirectory=/opt/fivek/app
+EnvironmentFile=/etc/fivek/app.env
+ExecStart=/opt/fivek/venv/bin/python -m fivek serve --port 8765
+Restart=on-failure
+RestartSec=5
+StateDirectory=fivek
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/fivek
+
+[Install]
+WantedBy=multi-user.target

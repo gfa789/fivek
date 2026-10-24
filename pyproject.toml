@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "garmin-api-client"
+version = "0.1.0"
+description = "Garmin onboarding, training insights and adaptive 5K planning"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["garminconnect>=0.3.15,<1.0", "caldav>=3.4,<4", "cryptography>=44,<47", "tzdata>=2024.1; sys_platform == 'win32'"]
+
+[project.scripts]
+fivek = "fivek.cli:main"
+
+[tool.setuptools.package-data]
+fivek = ["dashboard.html", "assets/*.js", "assets/*.css"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

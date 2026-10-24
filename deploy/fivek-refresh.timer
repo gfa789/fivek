@@ -1,0 +1,10 @@
+[Unit]
+Description=Scheduled FiveK refresh
+
+[Timer]
+OnCalendar=*-*-* 00/2:15:00
+Persistent=true
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target
