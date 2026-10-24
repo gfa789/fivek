@@ -33,3 +33,9 @@ database file. Keep credentials and data out of Git and out of web roots.
 Garmin may challenge or reject cloud IP logins. Authenticate from the dashboard
 after credentials are configured privately. A successful home-network login
 does not guarantee a cloud login succeeds.
+
+## Fresh account setup
+
+The dashboard Settings section includes an encrypted Garmin connection form. Save the connection, then select Refresh Garmin and complete MFA if requested. Optional Apple Calendar setup uses an app-specific password. No laptop credentials or history are required. The scheduled-refresh service loads the same saved encrypted connection.
+
+Set an automation_status database setting with installed=true and platform=linux when the systemd refresh timer is enabled, so the dashboard describes server scheduling correctly.

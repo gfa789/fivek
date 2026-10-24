@@ -13,7 +13,7 @@ Tailscale owner. No personal databases, access tokens, credentials or imported
 health records are included. Runtime state is excluded from Git. See
 [deployment instructions](deploy/README.md) for always-on Linux hosting.
 
-Training heuristics are transparent planning aids, not diagnoses or a guarantee of race performance. Garmin support depends on the third-party garminconnect adapter and account availability. On Linux, optional calendar credentials use Fernet encryption with a separate private key file; on Windows they use account encryption.
+Training heuristics are transparent planning aids, not diagnoses or a guarantee of race performance. Garmin support depends on the third-party garminconnect adapter and account availability. Garmin can be connected from the dashboard Settings section, or configured through environment variables. Saved Garmin and optional calendar credentials use Fernet encryption with a separate private key file on Linux and account encryption on Windows.
 
 ## Checks
 
