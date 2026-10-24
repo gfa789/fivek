@@ -49,7 +49,8 @@ class DeploymentTests(unittest.TestCase):
         old='a'*40;new='b'*40
         state={'deployed_sha':old}
         result=SimpleNamespace(stdout=new,returncode=0)
-        with patch.object(deploy,'read_state',return_value=state), \
+        with patch.object(Path,'exists',return_value=False), \
+             patch.object(deploy,'read_state',return_value=state), \
              patch.object(deploy,'build_user',return_value=result), \
              patch.object(deploy,'busy',return_value=False), \
              patch.object(deploy,'release_build',side_effect=RuntimeError('Tests failed')), \
