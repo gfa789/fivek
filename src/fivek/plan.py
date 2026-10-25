@@ -67,8 +67,10 @@ def progression_review(metrics: dict, today: date, target: date, running_days: l
     routine = len(recorded_days) == 2 and all(count >= routine_days for count in recorded_days)
     confirmed = metrics.get("confirmed_benchmark")
     fresh_result = bool(confirmed and 0 <= (today - date.fromisoformat(confirmed["date"])).days <= 42)
-    spaced_days = [d for d in running_days if all(min((d-f) % 7, (f-d) % 7) >= 2 for f in football_days)]
-    quality_schedule = len(running_days) >= (3 if len(football_days) >= 2 else 2) and bool(spaced_days)
+    intensity=metrics.get('preferences',{}).get('football_intensity',{})
+    hard_football=[d for d in football_days if intensity.get(str(d),'hard')=='hard']
+    spaced_days = [d for d in running_days if all(min((d-f) % 7, (f-d) % 7) >= 2 for f in hard_football)]
+    quality_schedule = len(running_days) >= (3 if len(hard_football) >= 2 else 2) and bool(spaced_days)
     days_left = (target - today).days
     milestones = [
         {"id": "recovery", "title": "Bring recovery into the decision", "status": "observed" if recovery == "normal" else "reassess",
@@ -81,7 +83,7 @@ def progression_review(metrics: dict, today: date, target: date, running_days: l
          "detail": "A measured result from the last six weeks is saved. Compare conditions and effort before setting the race target." if fresh_result else "After your easy routine is settled, and you can comfortably run for 30 minutes without pain, consider a measured 5K on a flat course. Use elapsed time and save the effort type. Replace a planned session and account for warm-up and cool-down; do not add a test on top of football or chase an old record.",
          "evidence": "A saved Garmin personal record or an ordinary ~5 km activity is historical or observational context. Your comfort and continuous-running ability are not inferred from watch duration."},
         {"id": "quality", "title": "Earn occasional controlled quality", "status": "base recorded" if base else "building base",
-         "detail": f"{metrics['recent_run_count']} runs across {metrics.get('recent_running_days', 0)} dates and {metrics['baseline_weekly_km']:.1f} km/week recorded over 28 days; {completed_weeks} programme weeks elapsed. Quality needs at least six distinct running dates and 8 km/week, two programme weeks, fresh recovery, suitable football spacing and enough time for the complete warm-up, repetitions and cool-down. Football already contributes two hard sessions.",
+         "detail": f"{metrics['recent_run_count']} runs across {metrics.get('recent_running_days', 0)} dates and {metrics['baseline_weekly_km']:.1f} km/week recorded over 28 days; {completed_weeks} programme weeks elapsed. Quality needs at least six distinct running dates and 8 km/week, two programme weeks, fresh recovery, suitable spacing and enough time for every workout step. {len(hard_football)} football session(s) are scheduled as hard; actual recorded effort can change the recovery picture.",
          "evidence": "These are coaching gates for this product, not targets to reach by adding mileage or medical clearance. Schedule support: " + ("available" if quality_schedule else "limited") + "."},
     ]
     if recovery == "pause":
@@ -135,12 +137,17 @@ def make_plan(metrics: dict, config: Config, today: date) -> dict:
     running_days = preferences.get("running_days", [2, 3, 5])
     football_days = preferences.get("football_days", [0, 6])
     gym = preferences.get("gym", True)
+    returning=preferences.get('strength_experience')=='returning'
+    gym_frequency=preferences.get('gym_sessions',2)
+    upper_enabled=gym and (not returning or gym_frequency==3)
+    football_intensity=preferences.get('football_intensity',{})
+    hard_football=[d for d in football_days if football_intensity.get(str(d),'hard')=='hard']
     unallocated = [d for d in range(7) if d not in running_days and d not in football_days]
     rest_day = 4 if 4 in unallocated else unallocated[-1] if unallocated else None
     gym_day = next((d for d in unallocated if d != rest_day), None) if gym else None
     # Preserve the familiar Wednesday/Thursday/Saturday pattern by default.
     def match_gap(weekday):
-        return min((min((weekday - f) % 7, (f - weekday) % 7) for f in football_days), default=7)
+        return min((min((weekday - f) % 7, (f - weekday) % 7) for f in hard_football), default=7)
     quality_day = max(running_days, key=lambda v: (match_gap(v), v == 3))
     long_day = 5 if 5 in running_days else running_days[-1]
     strength_day = next((v for v in running_days if v != quality_day and v != long_day), running_days[0])
@@ -210,8 +217,9 @@ def make_plan(metrics: dict, config: Config, today: date) -> dict:
                 row.update(kind="race", title="New Year 5K" if (target.month, target.day) == (1, 1) else "Goal 5K", effort="race",
                            details="If healthy and recovered: 10–15 min easy warm-up, mobility and 3–4 relaxed strides. Start controlled, settle through kilometres 2–4, then increase effort in the final kilometre. Use a measured course and elapsed time.", km=5)
             elif weekday in football_days:
-                row.update(kind="football", title="Five-a-side · evening", effort="hard",
-                           details="Your regular match counts as a hard session. Record it on your watch; saved duration is included in workload. No additional running today. Reassess calf, groin and hamstring soreness afterward.")
+                effort=football_intensity.get(str(weekday),'hard')
+                row.update(kind="football", title="Football · hard intervals" if effort=='hard' else "Football · lighter session", effort=effort,
+                           details=("Treat this as the week's hard intermittent/interval session." if effort=='hard' else "Keep this match at moderate, social effort: limit all-out sprints and reduce minutes if needed. This is a lighter planned session, not a claim that the recorded match was easy.")+" Record it on your watch; actual duration, load and recovery still count. No additional running today. Reassess soreness afterward.")
                 if to_race <= 5:
                     row.update(title="Football · taper decision", optional=True,
                                details="To prioritise your 5K, skip this match or substantially reduce minutes and sprinting. A full match this close to race day can leave fatigue; log what you actually do.")
@@ -223,14 +231,14 @@ def make_plan(metrics: dict, config: Config, today: date) -> dict:
             elif weekday == strength_day and weekday in running_days and weekday != quality_day:
                 row.update(kind="easy", title="Easy run + gym", effort="RPE 2–3 / full sentences",
                            km=session_km, minutes=(15 if day_taper else easy_minutes) if session_km is None else None,
-                           details="Comfortable conversational running; use walking breaks if needed. " + ("Light core and mobility only during taper." if day_taper else "Then Gym B: upper-body and trunk work, without heavy legs before the next run." if gym else "Gentle mobility afterward."))
-                if not gym:
+                           details="Comfortable conversational running; use walking breaks if needed. " + ("Light core and mobility only during taper." if day_taper else "Upper-body compound work can follow, without heavy legs before the next run." if upper_enabled else "Gentle mobility afterward."))
+                if not upper_enabled:
                     row["title"] = "Easy aerobic run"
             elif weekday == quality_day and weekday in running_days:
                 recent_paces = [a['pace_seconds_km'] for a in metrics.get('activities',[]) if a.get('kind')=='run' and a.get('pace_seconds_km') and 240<=a['pace_seconds_km']<=720 and a['date']>=(today-timedelta(days=28)).isoformat()]
                 quality_km = min(session_km or easy_minutes/((median(recent_paces) if recent_paces else 360)/60), 8)
                 steps = quality_steps(quality_km, metrics, phase == "5K specific", cycle_index)
-                minimum_running_days = 3 if len(football_days) >= 2 else 2
+                minimum_running_days = 3 if len(hard_football) >= 2 else 2
                 conditional_quality = index>=2 and cycle_index>=2
                 quality = (established or conditional_quality) and len(running_days) >= minimum_running_days and cycle_index >= 2 and cycle_index % 4 != 3 and not day_taper and bool(steps) and (metrics["recovery"]["status"] == "normal" or conditional_quality) and match_gap(weekday) >= 2
                 reasons = []
@@ -319,7 +327,7 @@ def make_plan(metrics: dict, config: Config, today: date) -> dict:
                     row["readiness_note"] = "This forecast assumes the current recovery flags settle. Refresh and reassess before this session; keep it easy or rest if fatigue or soreness persists."
             if row["kind"] == "easy" and row["minutes"] and starting < 10:
                 row["details"] = (f"{row['minutes']} minutes total: 3 min brisk walking or easy jogging, then conversational running, then 3 min easy cool-down. If continuous running is uncomfortable, alternate 2 min easy running with 1 min walking within the same time budget. "
-                                  + ("Gym B upper-body and trunk follows; separate sessions by a few hours if preferred." if gym and weekday == strength_day and not day_taper else ""))
+                                  + ("Upper-body gym follows; separate sessions by a few hours if preferred." if upper_enabled and weekday == strength_day and not day_taper else ""))
                 if day_taper:
                     row["details"] += " Keep this short and relaxed during taper; skip fast strides while building run/walk consistency."
                 if day <= today + timedelta(days=2) and metrics["recovery"]["status"] == "reduce":
@@ -333,17 +341,23 @@ def make_plan(metrics: dict, config: Config, today: date) -> dict:
                               {'kind':'cooldown','minutes':3,'effort':'walk or easy jog'}]
                 row['estimated_minutes']=sum(step['minutes'] for step in row['steps'])
                 row['decision_reasons']=row.get('decision_reasons',[])+[f"Recent running averages {baseline:.1f} km/week. Build consistent run exposure while football supplies hard efforts; no missed-session catch-up."]
-            gym_upper = row['kind']=='easy' and weekday==strength_day and gym and not day_taper
-            if row['kind']=='strength' or gym_upper:
+            gym_upper = row['kind']=='easy' and weekday==strength_day and gym and not day_taper and (not returning or gym_frequency==3)
+            gym_lower = row['kind']=='easy' and weekday==long_day and gym and returning and not day_taper
+            if row['kind']=='strength' or gym_upper or gym_lower:
                 reduced=day<=today+timedelta(days=2) and metrics['recovery']['status']=='reduce'
                 gym_week=max(0,(day-program_start).days//7)
                 observed_gyms=sum(a.get('sport')=='strength_training' and (today-timedelta(days=13)).isoformat()<=a['date']<=today.isoformat() for a in metrics.get('activities',[]))
                 if index==0 and observed_gyms<2:
                     gym_week=min(gym_week,1)
-                row['gym']=strength_workout(upper=gym_upper or reduced,week=gym_week,taper=day_taper,reduced=reduced)
+                row['gym']=strength_workout(upper=gym_upper or reduced,week=gym_week,taper=day_taper,reduced=reduced,
+                                           returning=returning,variant='C' if gym_upper else 'B' if gym_lower else 'A',deload=cycle_index%4==3)
                 if row['kind']=='strength':
                     row['minutes']=row['gym']['minutes']
-                row['total_minutes']=(row.get('estimated_minutes') or row.get('minutes') or 0)+(row['gym']['minutes'] if gym_upper else 0)
+                    row['title']=row['gym']['name']
+                elif returning:
+                    row['title']='Easy run + optional Gym C' if gym_upper else 'Longer easy run + Gym B'
+                    row['details']+=' '+('Optional upper-compound Gym C is a third exposure, and the first to omit if recovery suffers.' if gym_upper else 'Gym B is the second baseline compound session. Separate it from the easy run by several hours; keep both submaximal.')
+                row['total_minutes']=(row.get('estimated_minutes') or row.get('minutes') or 0)+(row['gym']['minutes'] if gym_upper or gym_lower else 0)
             row['fuel']="Eat a carbohydrate-containing meal before running or football and a normal meal with carbohydrate and protein afterward. On double-session days, eat and drink between sessions; do not compensate by skipping meals."
             outlook=metrics.get('athlete',{}).get('performance',{})
             if outlook.get('available'):
@@ -372,7 +386,7 @@ def make_plan(metrics: dict, config: Config, today: date) -> dict:
                     if recorded_gym and row['kind']=='strength':
                         row.update(status='recorded',recorded_activity_ids=[a['id'] for a in recorded_gym],next_action='Strength training is recorded today. Do not repeat the gym session. A recording does not verify every prescribed exercise.')
                     elif recorded_runs and row['kind']=='easy' and not recorded_gym:
-                        row['next_action']='Running is recorded today; do not add a second run. Gym B remains planned if you feel recovered. Do it separately or omit it if tired; a run recording does not mark strength work done.'
+                        row['next_action']='Running is recorded today; do not add a second run. '+row['gym']['name']+' remains planned if you feel recovered. Do it separately or omit it if tired; a run recording does not mark strength work done.'
             sessions.append(row)
     # Summaries describe the actual remaining prescriptions, including the goal effort.
     for week in plan_weeks:
@@ -410,6 +424,8 @@ def make_plan(metrics: dict, config: Config, today: date) -> dict:
             "pace_guidance": "Easy: full sentences, RPE 2–3/10. Controlled quality: RPE 6–8/10, never sprint. No age-predicted heart-rate zones or unverified race paces.",
             "rules": ["No catch-up workouts after missed sessions.", "Forecast growth is a conservative heuristic, not an injury-proof rule; repeated soreness or missed weeks hold or reduce volume.", "Stop for pain; downgrade a session if fatigue, illness or football soreness changes how you move.", "Taper running in the final 10 days and reduce football close to race day.", "Height and age identify your profile; they do not determine running fitness."],
             "weekly_structure":{'training_days':6,'running_sessions':len(running_days),'football_sessions':len(football_days),
-                                'gym_sessions':2 if gym and gym_day is not None else 0,'rest_weekday':rest_day,
-                                'note':'Football counts toward six days. Gym A has its own day; Gym B follows an easy run. Recovery flags and taper can reduce the schedule.'},
+                                'gym_sessions':gym_frequency if returning and gym else 2 if gym and gym_day is not None else 0,'rest_weekday':rest_day,
+                                'strength_experience':'returning (self-reported)' if returning else 'foundation',
+                                'football_intensity':{str(d):football_intensity.get(str(d),'hard') for d in football_days},
+                                'note':'Football counts toward six days. Returning-lifter mode has two main compound sessions and an optional third upper-compound exposure. Recovery flags and taper can reduce the schedule.' if returning else 'Football counts toward six days. Gym A has its own day; Gym B follows an easy run. Recovery flags and taper can reduce the schedule.'},
             "weeks": plan_weeks, "sessions": sessions}

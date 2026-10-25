@@ -260,6 +260,7 @@ def analyse(store: Store, today: date, preferences: dict | None = None) -> dict:
     preferences = preferences or {}
     football_days = preferences.get("football_days", [0, 6])
     football_names = ", ".join((date(2026, 10, 5) + timedelta(days=d)).strftime("%A") for d in football_days)
+    football_split=', '.join((date(2026,10,5)+timedelta(days=d)).strftime('%A')+' '+preferences.get('football_intensity',{}).get(str(d),'hard') for d in football_days)
     all_activities, wellness = activities(store), daily(store)
     garmin_records = running_records(store.get("personal_records", "account"), today)
     garmin_5k = next((record for record in garmin_records if record["type_id"] == 3), None)
@@ -333,7 +334,7 @@ def analyse(store: Store, today: date, preferences: dict | None = None) -> dict:
     # A large percentage off a tiny denominator is workload context, not a
     # recovery observation. Do not turn two short runs into a fatigue diagnosis.
     insights = [
-        {"title": "Build around your football", "detail": f"{football_names or 'No scheduled'} evening five-a-side. Count matches as demanding work; use the following day to reassess soreness. Occasional running quality is enabled only when your running base, session budget and recovery support it.", "evidence": "Your saved schedule; football intensity is assumed until recorded or logged."},
+        {"title": "Your football intensity split", "detail": f"{football_split or 'No scheduled football'}. These are planned efforts; actual recorded load and next-day recovery can be higher. Running quality is scheduled around the hard match, while lighter football still contributes duration and fatigue.", "evidence": "Your stated schedule and intended intensity; actual Garmin recordings and recovery are retained unchanged."},
         {"title": "Your running baseline", "detail": f"{len(runs)} recorded runs and {sum(a['km'] or 0 for a in runs):.1f} km over 28 days; average {baseline:.1f} km/week.", "evidence": "Garmin activity history; zero recorded distance can also mean missing recordings."},
     ]
     previous_blocks = []

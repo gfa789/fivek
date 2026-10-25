@@ -8,10 +8,30 @@ from .config import Config
 
 
 def validate_preferences(body: dict, today: date) -> dict:
-    allowed = {"target_date", "running_days", "football_days", "gym"}
+    allowed = {"target_date", "running_days", "football_days", "gym", "strength_experience", "gym_sessions", "football_intensity", "weight_strategy", "weight_reference_kg"}
     if set(body) - allowed:
         raise ValueError("Unknown training preference")
     result = {}
+    if 'weight_reference_kg' in body:
+        from math import isfinite
+        value=body['weight_reference_kg']
+        if type(value) not in (float,int) or not isfinite(value) or not 25<=value<=400:
+            raise ValueError('Choose a valid weight reference in kilograms')
+        result['weight_reference_kg']=round(value,2)
+    for key,choices in [('strength_experience',{'foundation','returning'}),('weight_strategy',{'maintain','modest_reduction'})]:
+        if key in body:
+            if not isinstance(body[key],str) or body[key] not in choices:
+                raise ValueError('Choose a supported '+key)
+            result[key]=body[key]
+    if 'gym_sessions' in body:
+        if type(body['gym_sessions']) is not int or body['gym_sessions'] not in (2,3):
+            raise ValueError('Choose two or three gym sessions')
+        result['gym_sessions']=body['gym_sessions']
+    if 'football_intensity' in body:
+        value=body['football_intensity']
+        if not isinstance(value,dict) or any(k not in {str(i) for i in range(7)} or not isinstance(v,str) or v not in {'hard','moderate','easy'} for k,v in value.items()):
+            raise ValueError('Choose valid football weekdays and effort levels')
+        result['football_intensity']=value
     if "target_date" in body:
         try:
             target = date.fromisoformat(body["target_date"])

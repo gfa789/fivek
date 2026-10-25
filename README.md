@@ -16,6 +16,12 @@ An administrator can use `fivek refresh --full` to reconcile edits, deletions or
 
 ## Privacy and deployment
 
+### Returning-lifter and football-effort preferences
+
+`strength_experience=returning` treats prior lifting skill as owner-reported context. The two main sessions become squat/bench/row and deadlift/press/pull programmes, with 2–3 submaximal working sets, longer rests, ramp-up sets and explicit load progression. With `gym_sessions=3`, Wednesday adds an optional upper-compound session; Tuesday and Saturday remain the two baseline sessions, Friday remains rest, and Saturday is a double day. Recovery overrides still apply. The owner can set Monday football to hard and Sunday to moderate through `football_intensity`; this changes scheduling assumptions without rewriting recorded load or recovery data.
+
+The owner-selected `weight_strategy=modest_reduction` supports an optional 1–2% review range from a saved `weight_reference_kg`, so the target does not ratchet downward after each measurement. It is enabled only with fresh measurements, an adequate scale-reported BMI, normal recovery and more than three weeks to the goal; otherwise the view returns to maintenance. It is not an ideal-racing-weight claim, calorie prescription or seconds-per-kilogram model. Strength and training quality take precedence, and the final three weeks use maintenance.
+
 ## Coaching and athlete context
 
 The default mix is six training days: Monday/Sunday football, Tuesday runner-strength, Wednesday easy running plus upper-body/trunk gym, Thursday running quality when earned, Saturday longer easy running, and Friday full rest. The first two programme weeks rebuild running consistency. Timed running increases gradually, every fourth week consolidates, later eligible sessions alternate short intervals/tempo/5K work, and the final ten days taper. Current quality requires six running dates and 8 km/week, two programme weeks, recovered observations, suitable spacing and enough session budget. Future quality is conditional and is re-evaluated before becoming near-term. Gym prescriptions include sets, reps, rests, technique and progression; working kilograms are never invented. Recorded runs and strength sessions are tracked separately on double-session days.

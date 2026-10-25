@@ -50,7 +50,8 @@ def race_readings(payload, today):
     return sorted(output.values(),key=lambda r:r['date'])
 
 
-def body_outlook(rows, today):
+def body_outlook(rows, today, preferences=None, recovery='normal', target_date=None):
+    preferences=preferences or {}
     rows=sorted([r for r in rows if r['date']<=today.isoformat()],key=lambda r:r['date'])
     if not rows:
         return {'available':False,'readings':[],'note':'No scale measurements imported yet. No weight target can be inferred.'}
@@ -63,11 +64,21 @@ def body_outlook(rows, today):
     # A maintenance band is a training/fuelling reference, never an inferred
     # ideal racing weight or a body-fat-based prescription to lose tissue.
     target=([round(average*.99,1),round(average*1.01,1)] if average is not None and not stale else None)
+    kind='Maintain and fuel training'
+    reduction=preferences.get('weight_strategy')=='modest_reduction'
+    reference=bounded(preferences.get('weight_reference_kg'),25,400) or average
+    eligible=reduction and average is not None and not stale and latest.get('bmi') is not None and latest['bmi']>=20 and recovery=='normal' and (target_date is None or (target_date-today).days>21)
+    if eligible:
+        target=[round(reference*.98,1),round(reference*.99,1)]
+        kind='Optional 1–2% reduction trial; protect strength and recovery'
+        if average<=target[1]:
+            kind='Reduction range reached; maintain and fuel training'
+    strategy_note=(' You requested a modest reduction: the trial range is anchored to your saved starting weight, not lowered after each weigh-in. It is a review point, not an ideal racing weight. Stop intentional loss if strength, recovery or training quality deteriorates. Return to maintenance during the final three weeks. No calorie deficit or seconds-per-kilogram claim is prescribed.' if reduction else '')
     return {'available':True,'latest':latest,'readings':rows,'seven_day_kg':average,
             'seven_day_count':len(recent),'previous_21_day_kg':previous_average,
             'change_kg':round(average-previous_average,2) if average is not None and previous_average is not None else None,
-            'stale':stale,'target_range_kg':target,'target_kind':'Maintain and fuel training',
-            'note':'The ±1% maintenance band is a planning reference around your seven-day mean, not an ideal racing weight or a medical target. Scale body-fat, muscle and water estimates vary with hydration. Lower weight is not automatically faster; no race-time benefit is assumed from weight loss. Fuel runs, gym and football; persistent fatigue, rapid unintentional loss or deteriorating recovery warrants nutrition review.'}
+            'stale':stale,'target_range_kg':target,'target_kind':kind,'weight_reference_kg':reference,
+            'note':'Body-mass reduction can help some runners, but the effect depends on what tissue is lost and how training responds. No automatic race-time benefit is assumed. Scale body-fat, muscle and water estimates vary with hydration. Fuel runs, gym and football; persistent fatigue, rapid unintentional loss or deteriorating recovery warrants nutrition review. A maintenance band is ±1% around your recent mean.'+strategy_note}
 
 
 def recovery_context(metrics,today):
@@ -117,7 +128,7 @@ def performance_outlook(metrics, rows, today, target):
 
 
 def athlete_insights(store,metrics,today,target):
-    body=body_outlook(list(store.records('body_measurements').values()),today)
+    body=body_outlook(list(store.records('body_measurements').values()),today,metrics.get('preferences'),metrics['recovery']['status'],target)
     races=sorted(store.records('race_estimates').values(),key=lambda r:r['date'])
     return {'body':body,'recovery':recovery_context(metrics,today),
             'performance':performance_outlook(metrics,races,today,target)}
