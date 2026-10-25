@@ -5,7 +5,7 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;',
 const dateLabel = value => new Date(value + 'T12:00:00Z').toLocaleDateString('en-GB', {day:'numeric',month:'short',timeZone:'UTC'});
 const time = seconds => seconds == null ? '—' : Math.floor(Math.round(seconds) / 60) + ':' + String(Math.round(seconds) % 60).padStart(2,'0');
 const short = (text, length=100) => text?.length > length ? text.slice(0,length).replace(/\s+\S*$/,'') + '…' : text || '';
-const volume = s => s.km ? s.km + ' km' : s.minutes ? s.minutes + ' min' : s.kind === 'football' ? 'Evening' : 'Recovery';
+const volume = s => s.gym && s.kind!=='strength' ? (s.estimated_minutes||s.minutes||'Run')+' + '+s.gym.minutes+' min' : s.km ? s.km + ' km' : s.minutes ? s.minutes + ' min' : s.kind === 'football' ? 'Evening' : 'Recovery';
 let report = null, etag = null, busy = false, loading = false, timer = null, activityRequest = 0;
 const activityCache = new Map();
 const metrics = {
@@ -47,16 +47,18 @@ function chart(rows, key, label) {
 }
 function training() {
   const p=report.plan, sessions=p.sessions.slice(0,7);
-  screen.innerHTML = '<div class="heading overview-title"><div><span class="eyebrow">Your January 5K</span><h1>Make the next session count.</h1><p class="note">' + esc(Math.max(0,p.days_remaining)) + ' days to ' + esc(dateLabel(p.target_date)) + ' · ' + esc(recoveryLabel(report.metrics.recovery.status)) + '</p></div><a class="button" href="#programme/0">The road ahead ↗</a></div><div class="focus">' + sessions.slice(0,2).map((s,i)=>'<a class="panel focus-card" href="#workout/' + s.date + '/overview/0"><span class="eyebrow">' + (i?'Tomorrow':'Today') + ' · ' + esc(dateLabel(s.date)) + '</span><h2>' + esc(s.title) + '</h2><p>' + esc(short(s.next_action || s.details,92)) + '</p><div><span class="pill">' + esc(s.status==='recorded'?'Recorded':volume(s)) + '</span></div><span class="open">Workout & strength →</span></a>').join('') + '</div><section class="panel week-panel"><div class="section-label"><h2>The next seven days</h2><span class="eyebrow">Run · strength · football</span></div><div class="week">' + sessions.map(s=>'<a class="day" data-kind="' + esc(s.kind) + '" href="#workout/' + s.date + '/overview/0"><span class="eyebrow">' + esc(s.weekday.slice(0,3)+' '+s.date.slice(8)) + '</span><strong>' + esc(s.title) + '</strong><span class="day-volume">' + esc(volume(s)) + ' ↗</span></a>').join('') + '</div>' + (!sessions.length?empty('No upcoming sessions. Your saved goal may have passed.'):'') + '</section>';
+  screen.innerHTML = '<div class="heading overview-title"><div><span class="eyebrow">Your January 5K</span><h1>Your six-day 5K programme.</h1><p class="note">' + esc(Math.max(0,p.days_remaining)) + ' days to ' + esc(dateLabel(p.target_date)) + ' · ' + esc(recoveryLabel(report.metrics.recovery.status)) + '</p></div><a class="button" href="#weeks/0">January progression ↗</a></div><div class="focus">' + sessions.slice(0,2).map((s,i)=>'<a class="panel focus-card" href="#workout/' + s.date + '/overview/0"><span class="eyebrow">' + (i?'Tomorrow':'Today') + ' · ' + esc(dateLabel(s.date)) + '</span><h2>' + esc(s.title) + '</h2><p>' + esc(short(s.next_action || s.details,92)) + '</p><div><span class="pill">' + esc(s.status==='recorded'?'Recorded':volume(s)) + '</span></div><span class="open">Workout & strength →</span></a>').join('') + '</div><section class="panel week-panel"><div class="section-label"><h2>The next seven days</h2><span class="eyebrow">Run · strength · football</span></div><div class="week">' + sessions.map(s=>'<a class="day" data-kind="' + esc(s.kind) + '" href="#workout/' + s.date + '/overview/0"><span class="eyebrow">' + esc(s.weekday.slice(0,3)+' '+s.date.slice(8)) + '</span><strong>' + esc(s.title) + '</strong><span class="day-volume">' + esc(volume(s)) + ' ↗</span></a>').join('') + '</div>' + (!sessions.length?empty('No upcoming sessions. Your saved goal may have passed.'):'') + '</section>';
 }
 function workout(date, section='overview', page=0) {
   const s=report.plan.sessions.find(s=>s.date===date);
   if(!s) return textPage('Session unavailable','Saved plan','This session is no longer in the current plan. Return to the overview for your latest training.','#training',n=>'#training');
   const sections = {
-    overview: {label:'Workout',text:[s.details,s.readiness_note,s.next_action,'Effort: '+s.effort+'.',s.optional?'This session is optional.':'',s.conditional?'Forecast only. This session adapts as actual training is recorded.':''].filter(Boolean).join(' ')},
+    overview: {label:'Workout',text:[s.details,s.readiness_note,s.next_action,'Effort: '+s.effort+'.',s.optional?'This session is optional.':'',s.conditional?'Forecast only. This session adapts as actual training is recorded.':'',s.pace_range_seconds_km?'Optional easy pace '+s.pace_range_seconds_km.map(time).join('–')+'/km. '+s.pace_note:''].filter(Boolean).join(' ')},
     steps:{label:'Steps',text:s.steps?.length?s.steps.map((v,i)=>'Step '+(i+1)+': '+v.minutes+' min '+v.kind.replaceAll('_',' ')+', '+v.effort+'.').join(' '):'No timed repetitions are prescribed. '+s.details},
     why:{label:'Why this session',text:[...(s.decision_reasons||[]),report.plan.pace_guidance,'Recovery guidance uses recorded wearable signals. Your watch cannot tell us about every symptom; stop or reduce a workout if how you feel warrants it.'].join(' ')},
   };
+  if(s.gym) sections.gym={label:'Gym',text:s.gym.name+'. '+s.gym.effort+'. '+s.gym.exercises.map(e=>e.name+': '+e.sets+' sets × '+e.reps+', rest '+e.rest_seconds+' sec. '+e.cue+'.').join(' ')+' '+s.gym.progression+' '+s.gym.adjustment};
+  sections.fuel={label:'Fuel',text:s.fuel||'Eat normally to support training and recovery.'};
   const selected=sections[section]||sections.overview;
   const segments='<div class="segments">'+Object.entries(sections).map(([key,v])=>'<a href="#workout/'+date+'/'+key+'/0" aria-current="'+(selected===v?'page':'false')+'">'+v.label+'</a>').join('')+'</div>';
   textPage(s.title,dateLabel(s.date)+' · '+volume(s),selected.text,'#training',n=>'#workout/'+date+'/'+section+'/'+n,page,segments);
@@ -69,7 +71,7 @@ function recentActivities() {
 function recent() {
   const m=report.metrics, activities=recentActivities();
   const stats=[['Running · 28 days',m.baseline_weekly_km.toFixed(1)+' km/wk',m.recent_run_count+' recorded runs'],['5K reference',m.benchmark?time(m.benchmark.seconds):'—','Observed effort, not a prediction'],['Sleep · 7 days',m.sleep_average_hours==null?'—':m.sleep_average_hours.toFixed(1)+' h','Recorded nights only'],['Recovery',recoveryLabel(m.recovery.status),'Wearable signals, not clearance']];
-  screen.innerHTML='<div class="heading"><div><span class="eyebrow">The recent picture</span><h1>Work done. Recovery earned.</h1></div></div><div class="stats">'+stats.map(([label,value,note])=>'<div class="panel stat"><span class="eyebrow">'+esc(label)+'</span><strong>'+esc(value)+'</strong><span class="note">'+esc(note)+'</span></div>').join('')+'</div><div class="stack stretch"><section class="panel"><div class="section-label"><h2>Last 28 days</h2><a class="open" href="#activities/all/0">All activities →</a></div><div class="sports">'+[['run','Running'],['strength','Strength'],['football','Football']].map(([key,label])=>{const rows=activities.filter(a=>sportMatch(a,key));return '<a class="sport" href="#activities/'+key+'/0"><strong>'+Math.round(rows.reduce((sum,a)=>sum+(a.minutes||0),0))+' min</strong><span>'+label+' · '+rows.length+' sessions ↗</span></a>';}).join('')+'</div></section><a class="panel card-link stretch" href="#insight/0/0"><span class="eyebrow">Training insights · '+m.insights.length+' findings</span><h2>'+esc(m.insights[0]?.title||'Building your training picture')+'</h2><p>'+esc(short(m.insights[0]?.detail||'Saved training will appear after the next automatic import.',150))+'</p><span class="open">Read the evidence →</span></a></div>';
+  screen.innerHTML='<div class="heading"><div><span class="eyebrow">The recent picture</span><h1>Your workload & recovery.</h1></div></div><div class="stats">'+stats.map(([label,value,note])=>'<div class="panel stat"><span class="eyebrow">'+esc(label)+'</span><strong>'+esc(value)+'</strong><span class="note">'+esc(note)+'</span></div>').join('')+'</div><div class="stack stretch"><section class="panel"><div class="section-label"><h2>Last 28 days</h2><a class="open" href="#activities/all/0">All activities →</a></div><div class="sports">'+[['run','Running'],['strength','Strength'],['football','Football']].map(([key,label])=>{const rows=activities.filter(a=>sportMatch(a,key));return '<a class="sport" href="#activities/'+key+'/0"><strong>'+Math.round(rows.reduce((sum,a)=>sum+(a.minutes||0),0))+' min</strong><span>'+label+' · '+rows.length+' sessions ↗</span></a>';}).join('')+'</div></section><a class="panel card-link stretch" href="#insight/0/0"><span class="eyebrow">Coaching evidence · '+m.insights.length+' findings</span><h2>'+esc(m.insights[0]?.title||'Building your training picture')+'</h2><p>'+esc(short(m.insights[0]?.detail||'Saved training will appear after the next automatic import.',150))+'</p><span class="open">Read the evidence →</span></a></div>';
 }
 function insight(index=0,page=0) {
   const values=report.metrics.insights, i=Math.max(0,Math.min(values.length-1,Number(index)||0)), value=values[i];
@@ -117,8 +119,44 @@ function dailyRows(key,days) {
   return report.metrics.daily.filter(d=>d.date>=start.toISOString().slice(0,10)&&d.date<=report.as_of);
 }
 function trends() {
-  const weeks=(report.metrics.history_weeks||report.metrics.weeks).slice(-26), daily=dailyRows('vo2_max',90);
-  screen.innerHTML='<div class="heading"><div><span class="eyebrow">Long-term trajectories</span><h1>How your fitness is moving.</h1><p class="note">Volume, recovery and Garmin estimates.</p></div></div><div class="grid trends-grid"><a class="panel chart-link" href="#metric/run_km/26/0"><div><span class="eyebrow">26 weeks</span><h2>Running consistency</h2></div><div class="chart">'+chart(weeks,'run_km','Recorded kilometres per week')+'</div><span class="open">Volume & weekly readings →</span></a><a class="panel chart-link" href="#metric/vo2_max/90/0"><div><span class="eyebrow">90 days</span><h2>Fitness & recovery</h2></div><div class="chart">'+chart(daily,'vo2_max','VO₂ max')+'</div><span class="open">VO₂ max · HRV · sleep · load →</span></a></div><p class="footer-note">Garmin estimates are signals. Missing data stays missing.</p>';
+  const a=report.metrics.athlete||{}, f=a.performance||{}, body=a.body||{}, recovery=a.recovery||{}, latest=recovery.latest||{};
+  const weeks=(report.metrics.history_weeks||report.metrics.weeks), last=weeks.at(-1);
+  screen.innerHTML='<div class="heading"><div><span class="eyebrow">Watch + scales + training</span><h1>Your performance, quantified.</h1></div></div><div class="coach-grid">'+
+    '<a class="panel coach-tile" href="#forecast/0"><span class="eyebrow">5K outlook</span><strong class="tile-value">'+(f.available?time(f.current_seconds)+' → '+time(f.january_seconds):'Awaiting watch')+'</strong><p class="note">Garmin now → January scenario</p><span class="open">Range, assumptions & evidence →</span></a>'+
+    '<a class="panel coach-tile" href="#recovery/0"><span class="eyebrow">Recovery & workload</span><strong class="tile-value">'+esc(latest.readiness??'—')+' <small>/100 readiness</small></strong><p class="note">HRV '+esc(latest.hrv_ms??'—')+' ms · load ratio '+esc(recovery.load_ratio??'—')+'</p><span class="open">Personal baselines & actions →</span></a>'+
+    '<a class="panel coach-tile" href="#body/0"><span class="eyebrow">Body composition</span><strong class="tile-value">'+(body.available?body.latest.weight_kg.toFixed(1)+' kg':'No scale data')+'</strong><p class="note">'+(body.available?'Scale estimate: '+(body.latest.body_fat_pct??'—')+'% body fat':'Periodic delta sync')+'</p><span class="open">Trend, target & fuelling →</span></a>'+
+    '<a class="panel coach-tile" href="#metric/run_km/26/0"><span class="eyebrow">Running consistency</span><strong class="tile-value">'+esc(last?.run_km??0)+' km <small>/7 days</small></strong><p class="note">28-day baseline '+report.metrics.baseline_weekly_km.toFixed(1)+' km/week</p><span class="open">26 weeks & recorded readings →</span></a></div><div class="segments"><a href="#metric/vo2_max/90/0">VO₂ max</a><a href="#metric/sleep_hours/28/0">Sleep</a><a href="#metric/hrv_ms/28/0">HRV</a><a href="#metric/acute_load/28/0">Garmin load</a></div><p class="footer-note">Predictions and scale composition are estimates. January is conditional.</p>';
+}
+function forecast(page=0) {
+  const f=report.metrics.athlete?.performance||{};
+  const text=f.available?'Current 5K estimate: '+time(f.current_seconds)+' ('+f.source+', '+dateLabel(f.source_date)+'). Working range '+f.current_range_seconds.map(time).join('–')+'. This is an estimate, not a completed race. January central scenario: '+time(f.january_seconds)+'; planning range '+f.january_range_seconds.map(time).join('–')+'. '+f.confidence+'. '+f.assumptions+' '+f.method+' Your latest observed ~5K run '+(report.metrics.benchmark?time(report.metrics.benchmark.seconds)+' on '+dateLabel(report.metrics.benchmark.date):'is unavailable')+' is shown separately: easy-run pace does not establish maximal race fitness. '+f.pace_note:(f.note||'Watch race estimates have not been imported yet.');
+  const trend=f.recent_trend_seconds==null?'':' Recent Garmin prediction trend: '+(f.recent_trend_seconds>0?'+':'')+f.recent_trend_seconds+' seconds. '+f.trend_basis;
+  textPage('Now → 31 January','5K performance outlook',text+trend,'#trends',n=>'#forecast/'+n,page);
+}
+function recovery(page=0) {
+  const r=report.metrics.athlete?.recovery||{}, latest=r.latest||{};
+  const comparisons=[['Sleep','sleep',' h'],['Overnight HRV','hrv',' ms'],['Resting heart rate','resting_hr',' bpm']].map(([label,key,unit])=>label+': last seven-day average '+(r[key]?.recent??'missing')+unit+' versus prior baseline '+(r[key]?.baseline??'insufficient readings')+unit+'; '+(r[key]?.readings??0)+' recent readings.').join(' ');
+  const flags=report.metrics.recovery.flags;
+  const text='Latest useful watch date: '+(latest.date||'unknown')+'. Readiness '+(latest.readiness??'missing')+'/100; Garmin status '+(latest.training_status||'missing')+'. '+comparisons+' Acute load '+(latest.acute_load??'missing')+', chronic load '+(latest.chronic_load??'missing')+' in Garmin device units; ratio '+(r.load_ratio??'unavailable')+'. '+(r.note||'')+' Coaching action: '+(flags.length?flags.join('. ')+' Follow the adjusted near-term session.':'No active recovery flags. Complete the prescribed session at its stated effort, with football counted as hard work.')+' Running-volume percentage changes are workload context; a large percentage off a small baseline alone does not diagnose poor recovery.';
+  textPage('Readiness, explained','Your personal recovery context',text,'#trends',n=>'#recovery/'+n,page);
+}
+function body(page=0) {
+  const b=report.metrics.athlete?.body||{};
+  const l=b.latest||{};
+  const text=b.available?'Latest scale reading '+dateLabel(l.date)+': '+l.weight_kg.toFixed(2)+' kg; scale-reported BMI '+(l.bmi??'missing')+'. Body fat '+(l.body_fat_pct??'missing')+'%, muscle '+(l.muscle_kg??'missing')+' kg, water '+(l.body_water_pct??'missing')+'%. These composition readings are hydration-sensitive estimates. Seven-day mean '+(b.seven_day_kg??'unavailable')+' kg from '+b.seven_day_count+' measurement days, versus prior 21-day mean '+(b.previous_21_day_kg??'unavailable')+' kg; change '+(b.change_kg??'unavailable')+' kg. '+(b.target_range_kg?'Working January target: maintain '+b.target_range_kg.join('–')+' kg while building training.':'A current maintenance range needs fresh measurements.')+' '+(b.stale?'This scale reading is stale. ':'')+b.note:(b.note||'Scale readings are not imported yet.');
+  const segments='<div class="segments"><a href="#body/0">Target & context</a><a href="#body-readings/0">Recorded measurements</a></div>';
+  textPage('Weight & performance','Garmin scale · fuel the programme',text,'#trends',n=>'#body/'+n,page,segments);
+}
+function bodyReadings(page=0) {
+  const rows=[...(report.metrics.athlete?.body?.readings||[])].reverse(),perPage=innerHeight<720?4:5,count=Math.ceil(rows.length/perPage),index=Math.max(0,Math.min(count-1,Number(page)||0));
+  screen.innerHTML='<div class="detail-head">'+back('#body/0','Body composition')+'<span class="eyebrow">Recorded scale measurements</span><h1>Weight trend</h1></div><div class="rows">'+rows.slice(index*perPage,(index+1)*perPage).map(r=>'<div class="row"><div><strong>'+esc(dateLabel(r.date))+'</strong><span class="note">Body fat estimate '+esc(r.body_fat_pct??'—')+'%</span></div><strong>'+r.weight_kg.toFixed(2)+' kg</strong></div>').join('')+(!rows.length?empty('No scale readings yet.'):'')+'</div>'+pager(index,count,n=>'#body-readings/'+n);
+}
+function weeks(page=0) {
+  const values=report.plan.weeks,index=Math.max(0,Math.min(values.length-1,Number(page)||0)),w=values[index];
+  if(!w) return programme();
+  const start=new Date(w.start+'T00:00:00Z'),end=new Date(start);end.setUTCDate(end.getUTCDate()+6);
+  const rows=report.plan.sessions.filter(s=>s.date>=w.start&&s.date<=end.toISOString().slice(0,10));
+  screen.innerHTML='<div class="detail-head">'+back('#training','Training')+'<span class="eyebrow">Week '+(index+1)+' · '+esc(w.phase)+'</span><h1>'+esc(dateLabel(w.start))+' · '+esc(w.training_days)+' training days</h1><p class="note">'+esc(w.planned_training_km)+' km + '+esc(w.planned_training_minutes)+' timed run min · '+esc(w.gym_sessions)+' gym sessions</p></div><div class="week forecast-week">'+rows.map(s=>'<a class="day" data-kind="'+esc(s.kind)+'" href="#workout/'+s.date+'/overview/0"><span class="eyebrow">'+esc(s.weekday.slice(0,3))+'</span><strong>'+esc(s.title)+'</strong><span class="day-volume">'+esc(volume(s))+' →</span></a>').join('')+'</div>'+pager(index,values.length,n=>'#weeks/'+n)+'<a class="back" href="#programme/0">Progression rules & recovery adjustments →</a><p class="footer-note">Future weeks are conditional and adapt to recorded training.</p>';
 }
 function metric(key='vo2_max',range=90,page=0) {
   if(key!=='run_km'&&!metrics[key]) key='vo2_max';
@@ -134,12 +172,17 @@ function metric(key='vo2_max',range=90,page=0) {
 function render(focus=false) {
   if(!report) return;
   const [route,a,b,c,d,e]=(location.hash.slice(1)||'training').split('/');
-  const tab=['workout','programme'].includes(route)?'training':['activities','activity','insight'].includes(route)?'recent':route==='metric'?'trends':route;
+  const tab=['workout','programme','weeks'].includes(route)?'training':['activities','activity','insight'].includes(route)?'recent':['metric','forecast','body','body-readings','recovery'].includes(route)?'trends':route;
   document.querySelectorAll('nav a').forEach(link=>link.setAttribute('aria-current',link.dataset.tab===tab?'page':'false'));
   document.getElementById('goal-label').textContent=dateLabel(report.plan.target_date)+' '+report.plan.target_date.slice(0,4)+' · 5K';
   activityRequest++;
   if(route==='workout') workout(a,b,c);
   else if(route==='programme') programme(a);
+  else if(route==='weeks') weeks(a);
+  else if(route==='forecast') forecast(a);
+  else if(route==='body') body(a);
+  else if(route==='body-readings') bodyReadings(a);
+  else if(route==='recovery') recovery(a);
   else if(route==='recent') recent();
   else if(route==='insight') insight(a,b);
   else if(route==='activities') activities(a,b);
@@ -163,7 +206,7 @@ async function poll() {
     if(!response.ok) throw Error('Connection unavailable');
     const state=await response.json(); busy=state.busy;
     const run=state.sync?.run;
-    syncStatus.classList.toggle('error',!!state.error||state.mfa);
+    syncStatus.classList.toggle('error',!!state.error||!!state.mfa);
     const stamp=run?.finished_at||run?.started_at;
     syncStatus.textContent=state.mfa?'Garmin requires account verification before background sync can continue.':state.error?'Sync paused · saved training is still available.':busy?'Background import running · showing saved training.':'Auto sync every 2 hours'+(stamp?' · last import '+new Date(stamp).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):' · waiting for first import');
     syncStatus.title=state.error||state.message||syncStatus.textContent;

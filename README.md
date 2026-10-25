@@ -16,6 +16,16 @@ An administrator can use `fivek refresh --full` to reconcile edits, deletions or
 
 ## Privacy and deployment
 
+## Coaching and athlete context
+
+The default mix is six training days: Monday/Sunday football, Tuesday runner-strength, Wednesday easy running plus upper-body/trunk gym, Thursday running quality when earned, Saturday longer easy running, and Friday full rest. The first two programme weeks rebuild running consistency. Timed running increases gradually, every fourth week consolidates, later eligible sessions alternate short intervals/tempo/5K work, and the final ten days taper. Current quality requires six running dates and 8 km/week, two programme weeks, recovered observations, suitable spacing and enough session budget. Future quality is conditional and is re-evaluated before becoming near-term. Gym prescriptions include sets, reps, rests, technique and progression; working kilograms are never invented. Recorded runs and strength sessions are tracked separately on double-session days.
+
+Scale composition and Garmin race-prediction history use two bounded calls per two-hour cycle: 90 days on first import, then a seven-day overlap. Normalized observations are retained locally, including older history. Page navigation still makes no Garmin calls. Recovery pages compare seven-day sleep/HRV/resting-HR against personal baselines and explain acute/chronic device load; ratios are descriptive, not injury predictions. A percentage increase from a near-zero running baseline no longer creates a recovery flag by itself.
+
+The current 5K outlook uses a fresh watch prediction or recent measured race/time trial, with ordinary runs shown separately. January scenarios assume 0.25% improvement per remaining week, capped at 4%, with a stretch cap of 6% and a 5%-slower interrupted-training case. These assumptions are explicit, unvalidated planning scenarios, not calibrated confidence intervals. Recovery pauses remove the central improvement. Pace ranges are provisional and effort takes precedence. No weight-loss speed benefit is assumed. Scale data supports weight/body-fat/muscle/water trends and a provisional ±1% maintenance band around a fresh seven-day average; it does not establish an ideal racing weight. Fuel training and seek qualified nutrition review before pursuing a weight-loss goal.
+
+## Privacy and deployment
+
 Source code is public; deployed dashboards are private to the configured
 Tailscale owner. No personal databases, access tokens, credentials or imported
 health records are included. Runtime state is excluded from Git. See

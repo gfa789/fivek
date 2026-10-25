@@ -330,8 +330,8 @@ def analyse(store: Store, today: date, preferences: dict | None = None) -> dict:
         flags.append("Recent pain has settled in your latest check-in: return gradually with easy work")
     if fresh_feedback and (fresh_feedback[-1]["fatigue"] >= 7 or fresh_feedback[-1]["soreness"] >= 6):
         flags.append("High fatigue or soreness reported")
-    if change is not None and change > 25 and not within_completed_budget:
-        flags.append("Running distance increased more than 25% versus the preceding three weeks")
+    # A large percentage off a tiny denominator is workload context, not a
+    # recovery observation. Do not turn two short runs into a fatigue diagnosis.
     insights = [
         {"title": "Build around your football", "detail": f"{football_names or 'No scheduled'} evening five-a-side. Count matches as demanding work; use the following day to reassess soreness. Occasional running quality is enabled only when your running base, session budget and recovery support it.", "evidence": "Your saved schedule; football intensity is assumed until recorded or logged."},
         {"title": "Your running baseline", "detail": f"{len(runs)} recorded runs and {sum(a['km'] or 0 for a in runs):.1f} km over 28 days; average {baseline:.1f} km/week.", "evidence": "Garmin activity history; zero recorded distance can also mean missing recordings."},

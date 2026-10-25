@@ -93,7 +93,7 @@ class GarminAPI:
             "get_training_readiness", "get_training_status", "get_max_metrics",
             "get_body_battery", "get_stress_data", "get_respiration_data",
             "get_spo2_data", "get_user_profile", "get_devices", "get_heart_rates",
-            "get_personal_record",
+            "get_personal_record", "get_body_composition", "get_race_predictions",
         }
         if resource not in allowed:
             raise ValueError("Unsupported Garmin read resource")

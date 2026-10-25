@@ -50,3 +50,14 @@ h1,h2,h3,p { margin:0; }h1 { font-size:clamp(23px,3vw,38px); line-height:1.12; l
  .reading { font-size:14px; line-height:1.5; }.detail-body { gap:10px; }.detail-head h1 { font-size:22px; }.row { padding:9px; }.rows { gap:6px; }
  .stats .stat .note { display:none; }.card-link p { font-size:11px; }.trends-grid .chart { max-height:16dvh; }
 }
+
+.coach-grid { display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:12px; flex:1; min-height:0; }
+.coach-tile { display:flex; flex-direction:column; gap:10px; text-decoration:none; }.coach-tile .open { margin-top:auto; }
+.tile-value { font-size:32px; line-height:1.2; letter-spacing:-1px; }.tile-value small { font-size:13px; font-weight:500; letter-spacing:0; }
+.forecast-week { flex:1; min-height:0; }.day[data-kind="strength"] { background:#e9e4f0; }
+main:focus-visible { outline:none; }
+@media(max-width:700px) {
+ .coach-grid { gap:8px; }.coach-tile { gap:7px; }.tile-value { font-size:22px; }.tile-value small { font-size:10px; display:block; }.coach-tile .note { font-size:10px; }.coach-tile .open { font-size:10px; }
+ .forecast-week .day { padding:9px; }
+ .segments a { font-size:9px; padding:5px 7px; }
+}

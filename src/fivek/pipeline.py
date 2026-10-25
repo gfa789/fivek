@@ -22,8 +22,10 @@ SOURCES = [
     {"title": "Garmin's explanation of HRV status", "url": "https://www.garmin.com/en-IE/garmin-technology/health-science/hrv-status/"},
     {"title": "Garmin's personal record criteria", "url": "https://support.garmin.com/en-GB/?faq=GePPQ3FJYO0A8TAHLeC7CA"},
     {"title": "NHS guidance on running pain and injuries", "url": "https://www.nhs.uk/live-well/exercise/knee-pain-and-other-running-injuries/"},
+    {"title": "AIS fuelling and energy availability", "url": "https://www.ausport.gov.au/ais/nutrition/energy-availability"},
+    {"title": "Garmin performance estimates", "url": "https://www8.garmin.com/manuals/webhelp/GUID-D3C2D1F9-D2C0-404D-9372-7B2D57459BF8/EN-US/GUID-F5BF67CE-C94E-4842-AE96-A7A05C85B732.html"},
 ]
-PROCESSING_VERSION = 17
+PROCESSING_VERSION = 18
 
 
 def atomic_text(path: Path, content: str):
@@ -55,6 +57,15 @@ def session_description(session: dict) -> str:
         lines.append(session["next_action"])
     if session.get("decision_reasons"):
         lines.append("Why this session: " + " ".join(session["decision_reasons"]))
+    if session.get('gym'):
+        gym=session['gym']
+        lines.append(gym['name']+'. '+gym['effort'])
+        lines.extend(f"{e['name']}: {e['sets']} sets x {e['reps']}; rest {e['rest_seconds']} sec. {e['cue']}" for e in gym['exercises'])
+        lines.extend([gym['progression'],gym['adjustment']])
+    if session.get('fuel'):
+        lines.append(session['fuel'])
+    if session.get('total_minutes'):
+        lines.append(f"Combined session time: approximately {session['total_minutes']} minutes.")
     return "\n".join(lines)
 
 
@@ -129,6 +140,8 @@ def _report(store: Store, config: Config, today: date | None = None) -> dict:
                                 **store.resource_coverage(expected_resources(history_start, today, activity_ids))}
         source_revision = store.setting("data_revision", 0)
         source_watermark = dict(store.db.execute("SELECT COUNT(*) records,MAX(fetched_at) latest_fetch FROM raw").fetchone())
+        from .physiology import athlete_insights
+        metrics["athlete"] = athlete_insights(store, metrics, today, effective_config(config, metrics["preferences"]).target)
     config = effective_config(config, metrics["preferences"])
     plan = make_plan(metrics, config, today)
     plan["generated_at"] = now()

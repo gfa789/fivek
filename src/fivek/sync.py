@@ -8,7 +8,7 @@ from typing import Callable
 from garmin_api import GarminAPI, GarminAuthenticationError, GarminConnectionError
 from .config import Config, local_today
 from .store import Store, BusyError
-from .resources import DAILY, ACTIVITY, ACCOUNT, expected_resources, validate_payload
+from .resources import DAILY, ACTIVITY, ACCOUNT, RANGED, expected_resources, validate_payload
 
 
 class SyncCancelled(RuntimeError):
@@ -173,6 +173,19 @@ class Sync:
             self.fetch(stream, "account", method, force=full or stream == "profile" or self.due(stream, "account", 24))
             if stream == "profile" and not self.account_verified:
                 raise GarminConnectionError("Garmin account identity could not be verified. Retry before importing more data.")
+        # Two bounded reads per periodic cycle; preserve observations beyond
+        # the rolling range so opening the dashboard never contacts Garmin.
+        from .physiology import scale_readings, race_readings
+        for stream, method in RANGED.items():
+            initial = self.store.cached(stream, "recent") is None
+            args = [(today - timedelta(days=89 if initial or full else 6)).isoformat(), today.isoformat()]
+            if stream == "race_predictions":
+                args.append("daily")
+            self.fetch(stream, "recent", method, *args, force=full or self.due(stream, "recent", 2))
+        for row in scale_readings(self.store.get("body_composition", "recent"), today):
+            self.store.put("body_measurements", row["date"], row)
+        for row in race_readings(self.store.get("race_predictions", "recent"), today):
+            self.store.put("race_estimates", row["date"], row)
         seen: set[str] = set()
         changed: set[str] = set()
         oldest = today
