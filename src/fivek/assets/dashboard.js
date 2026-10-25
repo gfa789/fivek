@@ -48,6 +48,12 @@ function chart(rows, key, label) {
 function training() {
   const p=report.plan, sessions=p.sessions.slice(0,7);
   screen.innerHTML = '<div class="heading overview-title"><div><span class="eyebrow">Your January 5K</span><h1>Your six-day 5K programme.</h1><p class="note">' + esc(Math.max(0,p.days_remaining)) + ' days to ' + esc(dateLabel(p.target_date)) + ' · ' + esc(recoveryLabel(report.metrics.recovery.status)) + '</p></div><a class="button" href="#weeks/0">January progression ↗</a></div><div class="focus">' + sessions.slice(0,2).map((s,i)=>'<a class="panel focus-card" href="#workout/' + s.date + '/overview/0"><span class="eyebrow">' + (i?'Tomorrow':'Today') + ' · ' + esc(dateLabel(s.date)) + '</span><h2>' + esc(s.title) + '</h2><p>' + esc(short(s.next_action || s.details,92)) + '</p><div><span class="pill">' + esc(s.status==='recorded'?'Recorded':volume(s)) + '</span></div><span class="open">Workout & strength →</span></a>').join('') + '</div><section class="panel week-panel"><div class="section-label"><h2>The next seven days</h2><span class="eyebrow">Run · strength · football</span></div><div class="week">' + sessions.map(s=>'<a class="day" data-kind="' + esc(s.kind) + '" href="#workout/' + s.date + '/overview/0"><span class="eyebrow">' + esc(s.weekday.slice(0,3)+' '+s.date.slice(8)) + '</span><strong>' + esc(s.title) + '</strong><span class="day-volume">' + esc(volume(s)) + ' ↗</span></a>').join('') + '</div>' + (!sessions.length?empty('No upcoming sessions. Your saved goal may have passed.'):'') + '</section>';
+  const shortcuts=['A','B','C'].map(key=>{
+    const session=p.sessions.find(row=>row.gym&&(row.gym.programme_key||row.gym.name.match(/^Gym ([ABC])/u)?.[1])===key);
+    return session?'<a data-gym-shortcut="'+key+'" aria-label="Gym '+key+' exercise list" href="#workout/'+session.date+'/gym/0">Gym '+key+'</a>':'';
+  }).join('');
+  if(shortcuts) screen.querySelector('.week-panel .section-label .eyebrow').outerHTML='<div class="gym-shortcuts" aria-label="Your gym workouts">'+shortcuts+'</div>';
+
 }
 function workout(date, section='overview', page=0) {
   const s=report.plan.sessions.find(s=>s.date===date);
@@ -59,9 +65,23 @@ function workout(date, section='overview', page=0) {
   };
   if(s.gym) sections.gym={label:'Gym',text:s.gym.name+'. '+s.gym.effort+'. '+s.gym.exercises.map(e=>e.name+': '+e.sets+' sets × '+e.reps+', rest '+e.rest_seconds+' sec. '+e.cue+'.').join(' ')+' '+s.gym.progression+' '+s.gym.adjustment};
   sections.fuel={label:'Fuel',text:s.fuel||'Eat normally to support training and recovery.'};
-  const selected=sections[section]||sections.overview;
+  const selected=section.startsWith('gym')&&s.gym?sections.gym:sections[section]||sections.overview;
   const segments='<div class="segments">'+Object.entries(sections).map(([key,v])=>'<a href="#workout/'+date+'/'+key+'/0" aria-current="'+(selected===v?'page':'false')+'">'+v.label+'</a>').join('')+'</div>';
+  if(s.gym&&section==='gym') return gymPage(s,page,segments);
+  if(s.gym&&section==='gym-exercise') return gymExercise(s,page);
+  if(s.gym&&section==='gym-progress') return textPage('Loads & progression',s.gym.name,s.gym.progression+' '+s.gym.adjustment,'#workout/'+date+'/gym/0',n=>'#workout/'+date+'/gym-progress/'+n,page,segments);
   textPage(s.title,dateLabel(s.date)+' · '+volume(s),selected.text,'#training',n=>'#workout/'+date+'/'+section+'/'+n,page,segments);
+}
+function gymPage(s,page,segments) {
+  const gym=s.gym,perPage=innerWidth<700||innerHeight<900?3:4,count=Math.ceil(gym.exercises.length/perPage),index=Math.max(0,Math.min(count-1,Number(page)||0));
+  const rest=seconds=>seconds%60?seconds+' sec':seconds/60+' min';
+  screen.innerHTML='<div class="detail-head gym-heading">'+back('#training','Training overview')+'<span class="eyebrow">'+esc(dateLabel(s.date))+' · '+gym.minutes+' min'+(gym.optional?' · optional':'')+'</span><h1>'+esc(gym.name)+'</h1></div>'+segments+
+    '<section class="panel gym-body"><p class="gym-effort">'+esc(gym.effort)+'</p><p class="note">Working sets below · warm-up sets are additional.</p><div class="exercise-list">'+gym.exercises.slice(index*perPage,(index+1)*perPage).map((e,i)=>'<a class="exercise-row" href="#workout/'+s.date+'/gym-exercise/'+(index*perPage+i)+'"><span class="exercise-number">'+(index*perPage+i+1)+'</span><div><strong>'+esc(e.name)+'</strong><span class="exercise-dose">'+e.sets+' sets × '+esc(e.reps)+' · Rest '+rest(e.rest_seconds)+'</span></div><span class="exercise-arrow" aria-hidden="true">→</span></a>').join('')+'</div>'+pager(index,count,n=>'#workout/'+s.date+'/gym/'+n)+'<a class="gym-progress button" href="#workout/'+s.date+'/gym-progress/0">Working weights & progression →</a></section>';
+}
+function gymExercise(s,index=0) {
+  const gym=s.gym,i=Math.max(0,Math.min(gym.exercises.length-1,Number(index)||0)),e=gym.exercises[i];
+  const parent='#workout/'+s.date+'/gym/'+Math.floor(i/(innerWidth<700||innerHeight<900?3:4));
+  screen.innerHTML='<div class="detail-head">'+back(parent,'Exercise list')+'<span class="eyebrow">Exercise '+(i+1)+' of '+gym.exercises.length+'</span><h1>'+esc(e.name)+'</h1></div><section class="panel detail-body exercise-detail"><strong>'+e.sets+' sets × '+esc(e.reps)+' · Rest '+e.rest_seconds+' sec</strong><p class="reading">'+esc(e.cue)+'</p><p class="note">'+esc(gym.effort)+'</p><p class="note">Ramp up before working sets. Choose current working weights, not old personal records.</p><div class="pager"><a href="#workout/'+s.date+'/gym-exercise/'+Math.max(0,i-1)+'" aria-disabled="'+(i===0)+'">← Exercise</a><span>'+(i+1)+' / '+gym.exercises.length+'</span><a href="#workout/'+s.date+'/gym-exercise/'+Math.min(gym.exercises.length-1,i+1)+'" aria-disabled="'+(i===gym.exercises.length-1)+'">Exercise →</a></div></section>';
 }
 const sportMatch = (a,sport) => sport==='all' || (sport==='strength'?a.sport==='strength_training':a.kind===sport);
 function recentActivities() {

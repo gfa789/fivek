@@ -28,6 +28,7 @@ class ReturningLifterChecks(unittest.TestCase):
         self.assertEqual(rows[6]['effort'],'moderate')
         self.assertEqual(rows[4]['kind'],'rest')
         self.assertEqual(sum('gym' in r for r in rows),3)
+        self.assertEqual([r['gym']['programme_key'] for r in rows if 'gym' in r],['A','C','B'])
         self.assertFalse(rows[1]['gym']['optional'])
         self.assertTrue(rows[2]['gym']['optional'])
         self.assertFalse(rows[5]['gym']['optional'])
@@ -46,6 +47,7 @@ class ReturningLifterChecks(unittest.TestCase):
     def test_recovery_flags_override_returning_experience(self):
         self.metrics['recovery']['status']='reduce'
         row=make_plan(self.metrics,self.config,TODAY)['sessions'][1]
+        self.assertEqual(row['gym']['programme_key'],'A')
         self.assertNotIn('Barbell back squat',[e['name'] for e in row['gym']['exercises']])
         self.metrics['recovery']['status']='pause'
         rows=make_plan(self.metrics,self.config,TODAY)['sessions'][:3]

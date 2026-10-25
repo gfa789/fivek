@@ -25,7 +25,7 @@ SOURCES = [
     {"title": "AIS fuelling and energy availability", "url": "https://www.ausport.gov.au/ais/nutrition/energy-availability"},
     {"title": "Garmin performance estimates", "url": "https://www8.garmin.com/manuals/webhelp/GUID-D3C2D1F9-D2C0-404D-9372-7B2D57459BF8/EN-US/GUID-F5BF67CE-C94E-4842-AE96-A7A05C85B732.html"},
 ]
-PROCESSING_VERSION = 19
+PROCESSING_VERSION = 20
 
 
 def atomic_text(path: Path, content: str):

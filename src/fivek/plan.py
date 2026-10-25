@@ -351,6 +351,7 @@ def make_plan(metrics: dict, config: Config, today: date) -> dict:
                     gym_week=min(gym_week,1)
                 row['gym']=strength_workout(upper=gym_upper or reduced,week=gym_week,taper=day_taper,reduced=reduced,
                                            returning=returning,variant='C' if gym_upper else 'B' if gym_lower else 'A',deload=cycle_index%4==3)
+                row['gym']['programme_key']='C' if returning and gym_upper else 'B' if gym_upper or gym_lower else 'A'
                 if row['kind']=='strength':
                     row['minutes']=row['gym']['minutes']
                     row['title']=row['gym']['name']
