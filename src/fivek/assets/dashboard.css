@@ -570,3 +570,116 @@ html {
     scroll-behavior: auto;
   }
 }
+
+
+/* The three main views use the available viewport; detail dialogs scroll independently. */
+[hidden] { display: none !important; }
+html { height: 100%; }
+body { height: 100dvh; display: flex; flex-direction: column; font-size: 14px; line-height: 1.4; }
+header, main, footer, .section-nav { width: 100%; max-width: 1440px; }
+header { padding: 12px 24px; flex: none; }
+header .actions { flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+button, .button { padding: 7px 11px; font-size: 12px; }
+.section-nav { display: flex; gap: 8px; padding: 10px 24px; margin: 0 auto; flex: none; }
+.section-nav button { background: transparent; color: var(--muted); border-radius: 8px; }
+.section-nav button[aria-selected="true"] { background: var(--green); color: white; }
+main { flex: 1; min-height: 0; padding: 0 24px; display: flex; flex-direction: column; }
+.status { padding: 6px 12px; margin: 0 0 4px; font-size: 12px; flex: none; }
+#freshness { margin-bottom: 8px; font-size: 11px; flex: none; }
+.sync-controls { flex: none; }
+.dashboard-view { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+.hero { padding: 10px 0; gap: 20px; grid-template-columns: 1.5fr 1fr; flex: none; }
+h1 { font-size: clamp(22px, 2.6vw, 36px); letter-spacing: -1px; margin: 6px 0; }
+h2 { font-size: 18px; margin-bottom: 8px; }
+.hero #today-summary { display: none; }
+.goal { padding: 12px 18px; border-radius: 10px; gap: 3px; }
+.goal strong { font-size: 28px; letter-spacing: -1px; }
+.goal p { margin: 0; font-size: 12px; }
+.goal #level { display: none; }
+.panel, .stat { padding: 16px; min-width: 0; }
+#training { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+.focus-days { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex: 1; min-height: 0; }
+.focus-card { border-radius: 10px; background: #edf0e4; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.focus-card:first-child { background: var(--green); color: white; }
+.focus-card:first-child .eyebrow { color: #d4dfc4; }
+.focus-card:first-child button { color: white; }
+.focus-card h2 { font-size: clamp(18px,2vw,26px); }
+.focus-card p { margin: 0; font-size: 13px; }
+.focus-bottom { display: flex; justify-content: space-between; gap: 8px; align-items: center; margin-top: auto; }
+#training .section-title, .week-navigation { margin: 0; }
+.week { grid-template-columns: repeat(7,minmax(0,1fr)); gap: 6px; }
+.day { min-height: 88px; padding: 8px; font-size: 11px; }
+.day strong { font-size: 12px; margin: 4px 0; }
+#pace { margin: 0; font-size: 11px; }
+#forecast-note:empty { display:none; }
+.stats { flex: none; gap: 10px; margin: 0; }
+.stat strong { font-size: 25px; }
+.insight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex: 1; min-height: 0; }
+.insight-grid > .panel { display: flex; flex-direction: column; min-height: 0; }
+#insights { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.insight { border: 0; padding: 14px 0; }
+.insight h3 { font-size: 20px; }
+.insight p { font-size: 15px; }
+.insight-controls { display:flex; align-items:center; justify-content:space-between; margin-top:auto; }
+.sport-totals { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.sport-totals strong, .sport-totals span { display:block; }
+.sport-totals strong { font-size:22px; }
+.sport-totals span { font-size:11px; color:var(--muted); }
+#football-review { font-size:12px; }
+#football-review details, #football-review > .evidence, .chart-readings { display:none; }
+svg { max-height: 25dvh; margin: 8px 0; }
+.insight-grid label { margin-top:4px; }
+.insight-grid select { padding:6px; margin:3px 0 6px; }
+.trend-heading p { margin: 0; }
+footer { padding: 8px 24px; display:flex; justify-content:space-between; flex:none; font-size:10px; }
+dialog { width:min(760px,94vw); max-height:88dvh; overflow:auto; border:1px solid var(--line); border-radius:14px; padding:22px; background:var(--bg); color:var(--ink); }
+dialog::backdrop { background:#10291d80; }
+dialog .panel { margin-bottom:14px; }
+dialog .session-details { border:0; margin:0; padding:0; }
+dialog svg { max-height:none; }
+@media (max-height:760px) and (min-width:701px) {
+ .hero { padding:0; } .hero .eyebrow { display:none; }
+ .goal { display:block; } .goal p { display:none; }
+ .focus-card { padding:10px; gap:5px; } .focus-card h2 { font-size:18px; }
+ .day { min-height:74px; } .panel,.stat { padding:10px; }
+ .dashboard-view { gap:8px; } .insight p { font-size:13px; }
+}
+@media (max-width:700px) {
+ header { padding:8px 12px; gap:8px; } .tag, header a, footer span:last-child { display:none; }
+ header .actions { gap:4px; } header button { padding:5px 7px; font-size:10px; }
+ .brand { font-size:20px; } .section-nav { padding:6px 12px; gap:4px; }
+ .section-nav button { font-size:11px; padding:7px; }
+ main { padding:0 12px; } .hero { grid-template-columns:1fr auto; padding:0; gap:8px; }
+ .hero .eyebrow,.goal .eyebrow,.goal p { display:none; } .goal { padding:8px; } .goal strong { font-size:20px; }
+ h1 { font-size:20px; } .panel,.stat { padding:10px; } #freshness { font-size:9px; }
+ .focus-days { gap:6px; } .focus-card { padding:9px; gap:6px; }
+ .focus-card .eyebrow { font-size:9px; letter-spacing:0; } .focus-card h2 { font-size:16px; }
+ .focus-card p { font-size:11px; } .focus-bottom { flex-direction:column; align-items:start; }
+ .focus-bottom button { font-size:10px; padding:5px; }
+ #training { gap:6px; } #training .section-title .badge, #pace { display:none; }
+ .week { grid-template-columns:1fr; gap:3px; }
+ .day { display:flex; align-items:center; gap:7px; min-height:0; padding:5px 7px; font-size:10px; }
+ .day br { display:none; } .day .eyebrow { font-size:9px; letter-spacing:0; }
+ .day strong { flex:1; font-size:11px; margin:0; } .week-navigation { font-size:10px; }
+ .stats { grid-template-columns:repeat(2,1fr); gap:6px; } .stat strong { font-size:20px; } .stat span { font-size:10px; }
+ .insight-grid { grid-template-columns:1fr; grid-template-rows:1fr 1fr; gap:8px; }
+ .insight { padding:4px 0; } .insight h3 { font-size:15px; } .insight p { font-size:12px; margin-bottom:6px; }
+ .insight .evidence { font-size:10px; } .insight-controls button { padding:3px 10px; }
+ #workload-chart { display:none; } #football-review p { font-size:10px; margin:5px 0 0; }
+ .sport-totals strong { font-size:18px; } h2 { font-size:15px; }
+ #view-2 .insight-grid { grid-template-columns:1fr; grid-template-rows:1fr 1.3fr; }
+ #view-2 .panel { display:grid; grid-template-columns:1fr 1fr; align-content:start; gap:2px 8px; }
+ #view-2 h2,#view-2 .panel>p,#chart,#sleep-chart { grid-column:1/-1; }
+ #view-2 svg { max-height:17dvh; margin:0; } #view-2 label { font-size:10px; }
+ #view-2 select { font-size:11px; padding:3px; } .trend-heading p { font-size:11px; }
+ footer { padding:5px 12px; }
+}
+
+#supporting-readings .chart-readings { display: block; }
+@media (max-width:700px) and (max-height:720px) {
+ #view-2 .trend-heading p { display:none; }
+ #view-2 .insight-grid { grid-template-rows:1fr 1.5fr; }
+ #view-2 svg { max-height:13dvh; }
+ #view-2 .panel>p { margin-bottom:3px; font-size:10px; }
+ #view-2 h2 { margin-bottom:3px; }
+}

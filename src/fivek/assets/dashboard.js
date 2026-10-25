@@ -435,6 +435,7 @@ function render(r) {
   renderActivities();
   renderCheckinHistory();
   renderFootballReview();
+  renderOverview(r);
   $("date").max = r.as_of;
   if (!$("date").value) {
     $("date").value = r.as_of;
@@ -467,7 +468,7 @@ $("football-review").onclick = (event) => {
   if (!button) return;
   $("date").value = button.dataset.checkin;
   fillCheckin();
-  $("feedback").scrollIntoView({ block: "start" });
+  $("checkin-dialog").showModal();
   $("date").focus({ preventScroll: true });
 };
 function fillCheckin() {
@@ -529,7 +530,7 @@ $("checkin-history").onclick = (event) => {
   $("date").value = button.dataset.checkin;
   fillCheckin();
   $("date").focus();
-  $("feedback").scrollIntoView({ block: "start" });
+  $("checkin-dialog").showModal();
 };
 async function load() {
   try {
@@ -559,6 +560,8 @@ async function poll() {
     $("full").disabled = s.busy;
     $("cancel").classList.toggle("hidden", !s.busy && !s.mfa);
     $("mfa").classList.toggle("hidden", !s.mfa);
+    if (s.mfa && !$('verification-dialog').open) $('verification-dialog').showModal();
+    if (!s.mfa && $('verification-dialog').open) $('verification-dialog').close();
     const run = s.sync.run,
       telemetry = run?.telemetry || {};
     const incomplete = ["partial", "interrupted"].includes(run?.status);
@@ -991,7 +994,7 @@ function renderWeek(p) {
     .join("");
   document
     .querySelectorAll(".day")
-    .forEach((el) => (el.onclick = () => choose(Number(el.dataset.index))));
+    .forEach((el) => (el.onclick = () => { choose(Number(el.dataset.index)); $("session-dialog").showModal(); }));
   const index = p.sessions.findIndex((s) => s.date === chosenDay);
   choose(index >= weekOffset && index < weekOffset + 7 ? index : weekOffset);
   $("week-prev").disabled = weekOffset === 0;
@@ -1064,15 +1067,105 @@ function renderHistory(r) {
   const count = Number($("history-range").value),
     rows = (r.metrics.history_weeks || r.metrics.weeks).slice(-count);
   $("chart").innerHTML = chart(rows, "run_km", "Recorded running kilometres") +
-    '<details><summary>View running weeks</summary><div class="table-wrap"><table><thead><tr><th>Week</th><th>Run km</th><th>Runs</th></tr></thead><tbody>' +
+    '<details class="chart-readings"><summary>View running weeks</summary><div class="table-wrap"><table><thead><tr><th>Week</th><th>Run km</th><th>Runs</th></tr></thead><tbody>' +
     [...rows].reverse().map(row => '<tr><td>' + esc(row.start) + ' to ' + esc(row.end) +
       '</td><td>' + esc(row.run_km) + '</td><td>' + esc(row.run_count) + '</td></tr>').join('') +
     '</tbody></table></div></details><p class="evidence">Zero means no running distance recorded in that window. It can also reflect missing recordings.</p>';
 }
 $("history-range").onchange = () => {
-  if (reportData) renderHistory(reportData);
+  if (reportData) {
+    renderHistory(reportData);
+    const detail = document.querySelector('#chart details');
+    if (detail) $('supporting-readings').replaceChildren(detail, ...document.querySelectorAll('#supporting-readings details:not(.chart-readings)'));
+  }
 };
 
 $("recovery-range").onchange = () => {
   if (reportData) renderRecovery(reportData);
 };
+
+
+// Three viewport-sized views; supporting forms remain available in dialogs.
+const verification = document.createElement('dialog');
+verification.id = 'verification-dialog'; verification.setAttribute('aria-label', 'Garmin verification');
+verification.append($('mfa')); document.body.append(verification);
+let insightPage = 0;
+const tabs = [...document.querySelectorAll('[role="tab"]')];
+function selectTab(index) {
+  tabs.forEach((tab, i) => {
+    tab.setAttribute('aria-selected', String(i === index));
+    tab.tabIndex = i === index ? 0 : -1;
+    $('view-' + i).hidden = i !== index;
+  });
+  sessionStorage.setItem('fivek-tab', String(index));
+}
+tabs.forEach((tab, index) => {
+  tab.onclick = () => selectTab(index);
+  tab.onkeydown = event => {
+    let next = index;
+    if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
+    else if (event.key === 'ArrowLeft') next = (index + tabs.length - 1) % tabs.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = tabs.length - 1;
+    else return;
+    event.preventDefault(); selectTab(next); tabs[next].focus();
+  };
+});
+selectTab(Math.max(0, Math.min(2, Number(sessionStorage.getItem('fivek-tab')) || 0)));
+document.querySelectorAll('[data-open-dialog]').forEach(button => {
+  button.onclick = () => $(button.dataset.openDialog).showModal();
+});
+document.querySelectorAll('[data-close-dialog]').forEach(button => {
+  button.onclick = () => button.closest('dialog').close();
+});
+// Keep Escape and native focus restoration for all supporting dialogs.
+function renderOverview(r) {
+  $('focus-days').innerHTML = r.plan.sessions.slice(0, 2).map((s, i) =>
+    '<article class="focus-card"><span class="eyebrow">' + (i ? 'Tomorrow' : 'Today') +
+    ' · ' + esc(s.date) + '</span><h2>' + esc(s.title) + '</h2><p>' +
+    esc(s.next_action || s.details.split('. ')[0] + '.') + '</p><div class="focus-bottom"><span class="badge">' +
+    esc(s.status === 'recorded' ? 'Recorded' : s.effort) + '</span><button type="button" class="secondary" data-focus="' + i +
+    '">Session & strength details</button></div></article>').join('');
+  document.querySelectorAll('[data-focus]').forEach(button => button.onclick = () => {
+    choose(Number(button.dataset.focus)); $('session-dialog').showModal();
+  });
+  const recent = r.metrics.activities.filter(a => a.date >= (() => {
+    const d = new Date(r.as_of + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate()-27); return d.toISOString().slice(0,10);
+  })() && a.date <= r.as_of);
+  const sports = [
+    ['Running', a => a.kind === 'run'],
+    ['Strength', a => a.sport === 'strength_training'],
+    ['Football', a => a.kind === 'football'],
+  ];
+  $('workload-summary').innerHTML = '<div class="sport-totals">' + sports.map(([label, match]) => {
+    const rows = recent.filter(match), minutes = rows.reduce((sum,a) => sum + (a.minutes || 0), 0);
+    return '<div><strong>' + Math.round(minutes) + ' min</strong><span>' + label + ' · ' + rows.length + ' recorded sessions</span></div>';
+  }).join('') + '</div>';
+  $('workload-chart').innerHTML = chart(r.metrics.weeks.slice(-4), 'run_km', 'Running kilometres · last four weeks');
+  // Paginate insights instead of hiding or clipping longer findings.
+  const box = $('insights');
+  const articles = [...box.querySelectorAll('.insight')];
+  const controls = document.createElement('div'); controls.className = 'insight-controls';
+  controls.innerHTML = '<button class="secondary" type="button" aria-label="Previous insight">←</button><span aria-live="polite"></span><button class="secondary" type="button" aria-label="Next insight">→</button>';
+  box.append(controls);
+  const show = () => {
+    insightPage = Math.max(0, Math.min(articles.length-1, insightPage));
+    articles.forEach((article,i) => article.hidden = i !== insightPage);
+    controls.querySelector('span').textContent = articles.length ? (insightPage+1) + ' / ' + articles.length : 'No insights yet';
+    controls.firstElementChild.disabled = insightPage <= 0;
+    controls.lastElementChild.disabled = insightPage >= articles.length-1;
+  };
+  controls.firstElementChild.onclick = () => { insightPage--; show(); };
+  controls.lastElementChild.onclick = () => { insightPage++; show(); };
+  show();
+  let readings = $('supporting-readings');
+  if (!readings) {
+    readings = document.createElement('section'); readings.id = 'supporting-readings'; readings.className = 'panel';
+    $('evidence-dialog').append(readings);
+  }
+  readings.replaceChildren();
+  for (const selector of ['#chart details', '#football-review details']) {
+    const detail = document.querySelector(selector);
+    if (detail) readings.append(detail);
+  }
+}
