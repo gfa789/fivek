@@ -683,3 +683,15 @@ dialog svg { max-height:none; }
  #view-2 .panel>p { margin-bottom:3px; font-size:10px; }
  #view-2 h2 { margin-bottom:3px; }
 }
+@media (max-width:700px) {
+ header a.button { display:none; }
+ #view-1 .stats .stat > span:last-child { display:none; }
+ #view-1 .stats .stat { padding:7px 9px; }
+ #view-1 .stats .stat > span:first-child { font-size:9px; }
+ #view-1 .insight-grid { grid-template-rows:minmax(0,1fr) auto; }
+ #view-1 .insight-grid > .panel:last-child { padding:8px 10px; }
+ #view-1 .insight-grid > .panel:last-child h2 { margin-bottom:5px; }
+ #view-1 .insight h3 { font-size:14px; margin-bottom:5px; }
+ #view-1 .insight p { font-size:11px; }
+ #view-1 .insight .evidence { font-size:9px; }
+}
