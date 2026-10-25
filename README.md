@@ -4,7 +4,15 @@ A Garmin onboarding, training-insights and adaptive 5K planning dashboard. Impor
 
 ## Run locally
 
-Requires Python 3.12+. Install with `pip install .`, configure your own credentials using `.env.example`, then run `fivek serve`. Open http://127.0.0.1:8765. Refresh Garmin and complete MFA in the dashboard if requested. Set FIVEK_AGE, FIVEK_HEIGHT_CM and FIVEK_SEX for your own profile; defaults are examples.
+Requires Python 3.12+. Install with `pip install .`, configure your own credentials using `.env.example`, then run `fivek refresh` for initial authentication and `fivek serve`. Open http://127.0.0.1:8765. Set FIVEK_AGE, FIVEK_HEIGHT_CM and FIVEK_SEX for your own profile; defaults are examples. The goal defaults to 31 January 2027; saved target preferences take precedence.
+
+## Mobile dashboard and background imports
+
+The dashboard has Training, Recent workload and Fitness trends views. Workouts, explanations, recorded activities and metric readings open as full-screen routes with native browser Back support. Longer details use pages. There are no modal dialogs, data-entry forms or refresh controls. Opening the dashboard reads saved SQLite reports and never starts Garmin authentication or an import. The viewer checks local status every minute (every 15 seconds during an import), pauses while hidden and uses report ETags.
+
+The deployed systemd timer refreshes every two hours independently of browsers. Local Windows installations can use `fivek schedule`. Initial activity discovery establishes membership once. Later discovery stops on a wholly known page older than a seven-day overlap and preserves older membership. Today and yesterday's recovery readings are fresh for two hours; the rest of the seven-day correction window is fresh for 24 hours. Cached older readings and unchanged workout details are reused. New or changed workouts receive details; old missing details are limited to 20 workouts and older missing recovery to 14 days per cycle. Backfill checkpoints resume on the next timer cycle and are reported as `backfilling`, not failures. Garmin rate limits still stop a run immediately.
+
+An administrator can use `fivek refresh --full` to reconcile edits, deletions or backdated uploads beyond the overlap window. Routine page views and scheduled imports never request a full refetch. Account connection, preferences and optional calendar setup remain available through authenticated administrative APIs; Garmin MFA can be completed through the local CLI.
 
 ## Privacy and deployment
 
@@ -13,7 +21,7 @@ Tailscale owner. No personal databases, access tokens, credentials or imported
 health records are included. Runtime state is excluded from Git. See
 [deployment instructions](deploy/README.md) for always-on Linux hosting.
 
-Training heuristics are transparent planning aids, not diagnoses or a guarantee of race performance. Garmin support depends on the third-party garminconnect adapter and account availability. Garmin can be connected from the dashboard Settings section, or configured through environment variables. Saved Garmin and optional calendar credentials use Fernet encryption with a separate private key file on Linux and account encryption on Windows.
+Training heuristics are transparent planning aids, not diagnoses or a guarantee of race performance. Garmin support depends on the third-party garminconnect adapter and account availability. Garmin can be configured through environment variables or the private connection API. Saved Garmin and optional calendar credentials use Fernet encryption with a separate private key file on Linux and account encryption on Windows.
 
 ## Checks
 

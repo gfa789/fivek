@@ -108,7 +108,7 @@ class MountedAccessTests(PrivateAccessTests):
         status, body, headers = self.request(path="/", headers=self.owner())
         self.assertEqual(status, 200)
         self.assertIn(self.app.app.token.encode(), body)
-        for target in (b'/running/assets/dashboard.js', b'/running/assets/dashboard.css', b'/running/report.json', b'/running/insights.md'):
+        for target in (b'/running/assets/dashboard.js', b'/running/assets/dashboard.css'):
             self.assertIn(target, body)
         self.assertNotIn(b'__BASE_PATH__', body)
         self.assertIn("Content-Security-Policy", headers)

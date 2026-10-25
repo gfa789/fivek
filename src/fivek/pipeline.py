@@ -23,7 +23,7 @@ SOURCES = [
     {"title": "Garmin's personal record criteria", "url": "https://support.garmin.com/en-GB/?faq=GePPQ3FJYO0A8TAHLeC7CA"},
     {"title": "NHS guidance on running pain and injuries", "url": "https://www.nhs.uk/live-well/exercise/knee-pain-and-other-running-injuries/"},
 ]
-PROCESSING_VERSION = 16
+PROCESSING_VERSION = 17
 
 
 def atomic_text(path: Path, content: str):
@@ -208,7 +208,8 @@ def refresh(api: GarminAPI, config: Config, *, full=False, progress=print, cance
         coordinator = Sync(api, store, config, progress, publish=lambda: report(store, config), cancel=cancel)
         try:
             summary = coordinator.run(run, full=full)
-            status = "partial" if summary["errors"] or summary["coverage"]["error"] or summary["coverage"]["missing"] else "complete"
+            status = ("partial" if summary["errors"] or summary["coverage"]["error"] else
+                      "backfilling" if summary["coverage"]["missing"] else "complete")
             store.finish(run, status, json.dumps(summary))
             return report(store, config)
         except SyncCancelled as exc:

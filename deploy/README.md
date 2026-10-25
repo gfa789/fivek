@@ -40,6 +40,8 @@ does not guarantee a cloud login succeeds.
 
 ## Fresh account setup
 
-The dashboard Settings section includes an encrypted Garmin connection form. Save the connection, then select Refresh Garmin and complete MFA if requested. Optional Apple Calendar setup uses an app-specific password. No laptop credentials or history are required. The scheduled-refresh service loads the same saved encrypted connection.
+The dashboard is a read-only mobile viewer. Configure Garmin in the private environment file or save a connection through the authenticated `/api/garmin/connect` administration endpoint. The scheduled-refresh service loads the same saved encrypted connection. Use the administration refresh endpoint to complete a server MFA challenge if Garmin requires one. Optional Apple Calendar setup uses an app-specific password through its authenticated administration endpoint. Credentials and data remain outside releases.
+
+The two-hour timer performs incremental imports. Existing reports are served without Garmin requests, and missing historical data resumes in bounded batches. See the repository README for the cache and overlap policy. A `backfilling` cycle is healthy and exits successfully; failures and rate limits retain checkpoints.
 
 Set an automation_status database setting with installed=true and platform=linux when the systemd refresh timer is enabled, so the dashboard describes server scheduling correctly.

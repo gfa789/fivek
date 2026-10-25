@@ -70,7 +70,7 @@ class PipelineChecks(unittest.TestCase):
         provider.calls.clear()
         self.sync(provider)
         stats_calls = [args for method, args in provider.calls if method == "get_stats"]
-        self.assertEqual(len(stats_calls), 8)  # Inclusive current day + previous seven.
+        self.assertEqual(len(stats_calls), 0)  # Recent observations remain fresh for two hours.
         self.assertFalse(any(method == "get_activity" for method, _ in provider.calls))
         generated = report(self.store, self.config, TODAY)
         self.assertEqual(generated["metrics"]["benchmark"]["seconds"], 1810)
@@ -131,10 +131,10 @@ class PipelineChecks(unittest.TestCase):
     def test_goal_effort_and_taper_summaries_match_prescriptions(self):
         metrics = analyse(self.store, TODAY)
         plan = make_plan(metrics, self.config, TODAY)
-        self.assertEqual(plan["sessions"][-1]["date"], "2027-01-01")
+        self.assertEqual(plan["sessions"][-1]["date"], "2027-01-31")
         self.assertEqual(plan["sessions"][-1]["kind"], "race")
         self.assertEqual(plan["sessions"][-2]["kind"], "rest")
-        late_football = [s for s in plan["sessions"] if s["kind"] == "football" and s["date"] >= "2026-12-27"]
+        late_football = [s for s in plan["sessions"] if s["kind"] == "football" and s["date"] >= (self.config.target - timedelta(days=5)).isoformat()]
         self.assertTrue(all(s["optional"] for s in late_football))
         for week in plan["weeks"]:
             start = date.fromisoformat(week["start"])

@@ -117,9 +117,8 @@ class Sync:
         self.check_cancel()
         cached = self.store.cached(stream, key)
         if cached and not force and (cached["status"] == "unavailable" or (cached["status"] in ("ok", "empty") and cached["has_payload"])):
-            if (datetime.now().astimezone() - datetime.fromisoformat(cached["attempted_at"])).days < 7 or cached["status"] in ("ok", "empty"):
-                self.stats["cache_hits"] += 1
-                return
+            self.stats["cache_hits"] += 1
+            return
         if method in self._unavailable_adapters:
             self.store.status(stream, key, "unavailable", "This Garmin adapter is unavailable.")
             self.unavailable += 1
@@ -149,6 +148,18 @@ class Sync:
                 self.unavailable += 1
                 self.stats["unavailable"] = self.unavailable
 
+    def due(self, stream: str, key: str, hours: int) -> bool:
+        """Revisit mutable recent observations on a clock, not on page views."""
+        cached = self.store.cached(stream, key)
+        if not cached or cached["status"] == "error":
+            return True
+        if cached["status"] == "unavailable":
+            hours = max(hours, 24)  # Unsupported recent channels are retried at most daily.
+        elif not cached["has_payload"]:
+            return True
+        age = datetime.now().astimezone() - datetime.fromisoformat(cached["attempted_at"])
+        return age.total_seconds() >= hours * 3600
+
     def run(self, run_id: int, *, full=False, today: date | None = None):
         today = today or local_today()
         self._run_id = run_id
@@ -159,12 +170,17 @@ class Sync:
             self.progress(message)
 
         for stream, method in ACCOUNT.items():
-            self.fetch(stream, "account", method, force=True)
+            self.fetch(stream, "account", method, force=full or stream == "profile" or self.due(stream, "account", 24))
             if stream == "profile" and not self.account_verified:
                 raise GarminConnectionError("Garmin account identity could not be verified. Retry before importing more data.")
         seen: set[str] = set()
         changed: set[str] = set()
         oldest = today
+        previous_roster = self.store.get("activity_roster", "current")
+        previous_items = self.store.records("activities")
+        incremental = previous_roster is not None and not full
+        complete_scan = True
+        cutoff = (today - timedelta(days=7)).isoformat()
         self.stats.update(phase="activities", completed=0, total=None)
         for page in range(2000):
             update(f"Discovering activities: page {page + 1}")
@@ -192,10 +208,26 @@ class Sync:
             self.stats["completed"] = len(seen)
             if not new:
                 raise GarminConnectionError("Garmin repeated an activity page. Saved progress; refresh stopped.")
+            # Garmin returns newest first. Cross the overlap window and stop at a
+            # wholly known page; retain all older membership from the saved scan.
+            if incremental and all(str(item["activityId"]) in previous_items and
+                                   str(item.get("startTimeLocal") or item.get("startTimeGMT") or "")[:10] < cutoff
+                                   for item in items):
+                complete_scan = False
+                break
         else:
             raise GarminConnectionError("Activity pagination limit reached. History is incomplete.")
-        # Record membership after a complete scan, retaining raw records for audit/recovery.
+        if not complete_scan:
+            # Reconcile deletions only in the recent window we actually scanned.
+            retained = {key for key in previous_roster if
+                        str(previous_items.get(key, {}).get("startTimeLocal") or previous_items.get(key, {}).get("startTimeGMT") or "")[:10] < cutoff}
+            seen |= retained
+        # Only a complete scan (initial import or explicit administrator --full)
+        # can remove older membership. Raw records remain available for recovery.
         self.store.put("activity_roster", "current", sorted(seen))
+        oldest = min([today] + [date.fromisoformat(day) for key, item in self.store.records("activities").items()
+                               if key in seen and (day := str(item.get("startTimeLocal") or item.get("startTimeGMT") or "")[:10])
+                               and self.valid_day(day)])
         self.publish_report()
         # Current wellness is processed first so a long initial import is useful immediately.
         start = self.config.start or (oldest if seen else today - timedelta(days=365))
@@ -207,7 +239,7 @@ class Sync:
             update(f"Fetching daily training and recovery: {day.isoformat()}")
             for stream, method in DAILY.items():
                 self.fetch(stream, day.isoformat(), method, day.isoformat(),
-                           force=full or day >= today - timedelta(days=7))
+                           force=full or ((today - day).days <= 7 and self.due(stream, day.isoformat(), 2 if (today - day).days <= 1 else 24)))
             if (today - day).days % 7 == 0:
                 self.publish_report()
             self.stats["completed"] += 1
@@ -216,22 +248,34 @@ class Sync:
         activity_items = sorted(self.store.records("activities").items(),
                                 key=lambda pair: str(pair[1].get("startTimeLocal") or pair[1].get("startTimeGMT") or ""), reverse=True)
         self.stats.update(phase="activity_details", completed=0, total=len(seen))
+        enriched = 0
         for index, (key, item) in enumerate(activity_items):
             if key not in seen:
                 continue
             update(f"Enriching activity {index + 1}/{len(seen)}")
             activity_day = str(item.get("startTimeLocal") or item.get("startTimeGMT") or "")[:10]
-            recent = activity_day >= (today - timedelta(days=7)).isoformat()
+            missing = any((cached := self.store.cached(stream, key)) is None or cached["status"] == "error" for stream in ACTIVITY)
+            if not full and activity_day < cutoff and enriched >= 20 and (missing or key in changed):
+                continue  # Older missing detail is filled in bounded background batches.
             for stream, method in ACTIVITY.items():
-                self.fetch(stream, key, method, key, force=full or recent or key in changed)
+                self.fetch(stream, key, method, key, force=full or key in changed)
+            if missing or key in changed:
+                enriched += 1
             self.stats["completed"] += 1
         self.publish_report()
         self.stats.update(phase="historical_recovery", completed=0, total=max(0, (day - start).days + 1))
+        backfilled = 0
         while day >= start:
+            missing = any(self.store.cached(stream, day.isoformat()) is None or
+                          self.store.cached(stream, day.isoformat())["status"] == "error" for stream in DAILY)
+            if missing and backfilled >= 14 and not full:
+                break
             update(f"Fetching daily training and recovery: {day.isoformat()}")
             for stream, method in DAILY.items():
                 self.fetch(stream, day.isoformat(), method, day.isoformat(),
-                           force=full or day >= today - timedelta(days=7))
+                           force=full)
+            if missing:
+                backfilled += 1
             if (today - day).days % 28 == 0:
                 self.publish_report()
             self.stats["completed"] += 1
@@ -242,3 +286,11 @@ class Sync:
                 "history_start": start.isoformat(), "history_end": today.isoformat(), "activities": len(seen),
                 "coverage": self.store.resource_coverage(expected_resources(start, today, seen)),
                 "telemetry": self.telemetry()}
+
+    @staticmethod
+    def valid_day(value):
+        try:
+            date.fromisoformat(value)
+            return True
+        except ValueError:
+            return False

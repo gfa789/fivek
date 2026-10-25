@@ -12,7 +12,7 @@ from .store import Store
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Garmin refresh → training insights → adaptive New Year 5K plan")
+    parser = argparse.ArgumentParser(description="Garmin refresh → training insights → adaptive end-of-January 5K plan")
     parser.add_argument("command", choices=("refresh", "report", "serve", "status", "doctor", "backup", "cancel", "schedule", "scheduled-refresh", "calendar-sync"), nargs="?", default="serve")
     parser.add_argument("--full", action="store_true", help="Refetch all supported history, including cached detail and daily data")
     parser.add_argument("--port", type=int, default=8765)
@@ -38,7 +38,7 @@ def main() -> int:
                 finally:
                     store.close()
             print(json.dumps(value, indent=2))
-            return 0 if value.get("status", "complete") == "complete" else 1
+            return 0 if value.get("status", "complete") in {"complete", "backfilling"} else 1
         if args.command in {"status", "doctor", "backup", "cancel"}:
             from .maintenance import create_backup, diagnostics, request_cancel
             if args.command == "cancel":
@@ -79,7 +79,7 @@ def main() -> int:
                     print("Garmin refresh saved. " + str(exc), file=sys.stderr)
                     return 1
             print(f"Refresh {result['sync']['run']['status']}. Insights: {config.data_dir / 'insights.md'}")
-            return 0 if result["sync"]["run"]["status"] == "complete" else 1
+            return 0 if result["sync"]["run"]["status"] in {"complete", "backfilling"} else 1
     except KeyboardInterrupt:
         print("Stopped. Saved Garmin data will resume on refresh.")
         return 130

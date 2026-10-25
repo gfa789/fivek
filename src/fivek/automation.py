@@ -27,7 +27,9 @@ def run_cycle(config: Config, auth_factory=None, calendar_provider=None):
                 api = (auth_factory or (lambda: auth_from_store(config)))().login()
                 result = refresh(api, config, progress=lambda _: None)
                 status["garmin_status"] = result["sync"]["run"]["status"]
-                if status["garmin_status"] != "complete":
+                if status["garmin_status"] == "backfilling":
+                    status.update(status="backfilling", message="Recent training is refreshed; missing older history resumes in the next scheduled batch.")
+                elif status["garmin_status"] != "complete":
                     status.update(status="retry", message="Some Garmin resources remain incomplete; the next cycle will resume them.")
             except GarminMFARequired:
                 status.update(status="needs_auth", message="Garmin requires verification. Complete a refresh in the dashboard.")

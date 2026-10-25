@@ -41,7 +41,7 @@ def load_environment(path: Path = Path(".env")) -> None:
 @dataclass(frozen=True)
 class Config:
     data_dir: Path = Path("data/fivek")
-    target: date = date(2027, 1, 1)
+    target: date = date(2027, 1, 31)
     start: date | None = None
     request_delay: float = 0.25
     age: int = 30
@@ -60,7 +60,7 @@ class Config:
             raise ValueError("FIVEK_REQUEST_DELAY must be a finite number between 0 and 60 seconds")
         config = cls(
             data_dir=Path(os.getenv("FIVEK_DATA_DIR", "data/fivek")),
-            target=date.fromisoformat(os.getenv("FIVEK_TARGET_DATE", "2027-01-01")),
+            target=date.fromisoformat(os.getenv("FIVEK_TARGET_DATE", "2027-01-31")),
             start=date.fromisoformat(os.environ["FIVEK_HISTORY_START"]) if os.getenv("FIVEK_HISTORY_START") else None,
             request_delay=delay,
             age=int(os.getenv("FIVEK_AGE", "30")),

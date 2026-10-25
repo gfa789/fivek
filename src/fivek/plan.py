@@ -50,7 +50,7 @@ def progression_review(metrics: dict, today: date, target: date, running_days: l
     days_left = (target - today).days
     milestones = [
         {"id": "recovery", "title": "Bring recovery into the decision", "status": "observed" if recovery == "normal" else "reassess",
-         "detail": "Fresh recovery observations or a recent check-in show no active flags." if recovery == "normal" else "Current recovery is " + recovery + ". Sync the watch, refresh and report fatigue, soreness and pain before progressing.",
+         "detail": "Fresh recovery observations show no active flags." if recovery == "normal" else "Current recovery is " + recovery + ". Keep your watch synced and consider fatigue, soreness and pain before progressing.",
          "evidence": "Current recovery flags and observation freshness; no flags is not proof of readiness for a hard effort."},
         {"id": "routine", "title": "Repeat an achievable running routine", "status": "recorded" if routine else "building",
          "detail": f"The latest two seven-day windows contain {', '.join(str(count) for count in recorded_days) or 'no'} distinct running days. Repeat your available easy sessions within the plan's budget; do not catch up missed running.",
@@ -69,7 +69,7 @@ def progression_review(metrics: dict, today: date, target: date, running_days: l
     elif days_left <= 10:
         title, action = "Arrive at the start line fresh", "Follow the short taper sessions and reduce or skip football close to the goal. An extra fitness test now adds fatigue; use your existing reference and how you feel."
     elif recovery == "unknown":
-        title, action = "Update recovery, then repeat the routine", "Sync your watch and add a check-in. Keep running conversational and within the plan's budget while rebuilding regular practice."
+        title, action = "Update recovery, then repeat the routine", "Keep your watch synced for the next automatic import. Keep running conversational and within the plan's budget while rebuilding regular practice."
     elif not routine or not base:
         title, action = "Repeat the easy routine", "Complete achievable easy sessions around football and log next-day soreness. Progress comes from repeated practice; keep the listed distance or time as a ceiling."
     elif not fresh_result:
@@ -320,7 +320,7 @@ def make_plan(metrics: dict, config: Config, today: date) -> dict:
                        "guidance": "Aim to improve the measured reference; choose a race target after a fresh controlled benchmark. An optimal time cannot be guaranteed.",
                        "certainty": "Athlete-confirmed measured result; effort and conditions are self-reported." if benchmark.get("origin") == "athlete" else "Observed effort, not a validated maximal race or a performance prediction."}
     return {"target_date": target.isoformat(), "days_remaining": days_left,
-            "strategy": "Running opportunities on " + ", ".join((date(2026, 10, 5) + timedelta(days=d)).strftime("%A") for d in running_days) + ". Easy consistency first; occasional controlled quality requires an established base and fresh recovery. Keep football in the overall workload. Rebuild from actual data every week.",
+            "strategy": "Build toward your best achievable 5K on " + target.strftime("%d %B %Y") + ". Running opportunities on " + ", ".join((date(2026, 10, 5) + timedelta(days=d)).strftime("%A") for d in running_days) + ". Establish consistent easy running, build from recorded volume, then use eligible 5K-specific sessions in the final five weeks and taper for the final ten days. Controlled quality requires an established base and fresh recovery. Strength supports running; football counts toward the workload. Rebuild from actual data every week.",
             "level": "established" if established else "foundation", "target_time": target_time,
             "progression": progression_review(metrics, today, target, running_days, football_days, completed_program_weeks),
             "volume_basis": {"rolling_baseline_km": baseline, "starting_weekly_km": round(starting, 2),

@@ -118,7 +118,9 @@ class Application:
                              progress=lambda message: self.update(message=message))
             status = result["sync"]["run"]["status"]
             self.queue_calendar_sync()
-            self.update(message="Refresh complete" if status == "complete" else "Refresh finished with some unavailable data")
+            self.update(message="Refresh complete" if status == "complete" else
+                        "Recent training refreshed; older history resumes in the next background batch" if status == "backfilling" else
+                        "Refresh finished with some unavailable data")
         except GarminMFARequired:
             if self.cancel_event.is_set():
                 self.auth = None
