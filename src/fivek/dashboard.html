@@ -5,19 +5,25 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="fivek-token" content="__CSRF_TOKEN__">
   <meta name="fivek-base-path" content="__BASE_PATH__">
-  <meta name="theme-color" content="#173e32">
-  <title>FiveK · January training</title>
+  <meta name="theme-color" content="#14271f">
+  <title>FiveK · Your training companion</title>
   <link rel="stylesheet" href="__BASE_PATH__assets/dashboard.css">
 </head>
 <body>
-  <header><a class="brand" href="#training" aria-label="FiveK training overview">Five<span>K</span></a><span id="goal-label">31 January · 5K</span><span class="auto-label">Automatic sync</span></header>
-  <div id="sync-status" role="status" aria-live="polite">Loading saved training…</div>
-  <main id="screen" tabindex="-1" aria-live="polite"></main>
-  <nav aria-label="Training dashboard">
-    <a href="#training" data-tab="training">Training</a>
-    <a href="#recent" data-tab="recent">Recent workload</a>
-    <a href="#trends" data-tab="trends">Fitness trends</a>
-  </nav>
+  <aside class="sidebar">
+    <a class="brand desktop-brand" href="#training" aria-label="FiveK today">Five<span>K</span><small>Your January project</small></a>
+    <nav aria-label="Training dashboard">
+      <a href="#training" data-tab="training"><span aria-hidden="true">◉</span> Today</a>
+      <a href="#weeks/0" data-tab="plan"><span aria-hidden="true">▦</span> Training plan</a>
+      <a href="#trends" data-tab="trends"><span aria-hidden="true">⌁</span> Insights</a>
+    </nav>
+    <div class="sidebar-goal"><span class="eyebrow">The finish line</span><strong>31 January 2027</strong><p>Run. Lift. Recover. Repeat.</p><a href="#forecast/0">Your 5K outlook →</a></div>
+  </aside>
+  <div class="workspace">
+    <header><a class="brand mobile-brand" href="#training" aria-label="FiveK today">Five<span>K</span></a><span class="desktop-context">YOUR TRAINING COMPANION</span><span id="goal-label">31 January · 5K</span></header>
+    <div id="sync-status" role="status" aria-live="polite">Loading saved training…</div>
+    <main id="screen" tabindex="-1" aria-live="polite"></main>
+  </div>
   <script src="__BASE_PATH__assets/dashboard.js" defer></script>
 </body>
 </html>
